@@ -1,0 +1,42 @@
+%%%-------------------------------------------------------------------
+%%% @author Chris Yunker <chris@yunker.io>
+%%% @copyright (C) 2014, Chris Yunker
+%%% @doc XMPP Authentication functions
+%%%
+%%% @end
+%%%-------------------------------------------------------------------
+-module(xcl_auth).
+
+-include("xcl.hrl").
+-include("xcl_config.hrl").
+
+-export([authenticate/2]).
+
+-import(xcl_util, [to_binary/1]).
+
+%%%===================================================================
+%%% Public API
+%%%===================================================================
+
+-spec authenticate(xcl:session(), [tuple()]) -> ok.
+authenticate(Session, Args) ->
+    Type = proplists:get_value(auth, Args, ?XCL_DEFAULT_AUTH),
+    case Type of
+        plain -> auth_plain(Session, Args);
+        _ ->
+            throw({fail_authentication, auth_type_not_supported})
+    end.
+
+-spec auth_plain(xcl:session(), [tuple()]) -> ok.
+auth_plain(#session{transport = Trans} = Session, Args) ->
+    Username = to_binary(proplists:get_value(username, Args)),
+    Password = to_binary(proplists:get_value(password, Args)),
+    Stanza = xcl_stanza:auth_plain(Username, Password),
+    ok = Trans:send_stanza(Session, Stanza),
+    {ok, AuthEl} = xcl_session:receive_stanza(Session, auth_reply),
+    xcl_stanza:verify_auth(AuthEl).
+
+%%%===================================================================
+%%% Private functions
+%%%===================================================================
+
