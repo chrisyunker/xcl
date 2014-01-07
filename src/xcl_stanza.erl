@@ -185,7 +185,7 @@ presence(PropList) ->
 
 -spec presence_roster(xcl:jid(), binary(), binary()) -> #xmlel{}.
 presence_roster(To, Type, Priority) ->
-    Attrs = [{<<"to">>, xcl_jid:bare(To)},
+    Attrs = [{<<"to">>, xcl_jid:bare_to_binary(To)},
              {<<"type">>, to_binary(Type)}],
     el(<<"presence">>, Attrs, [el_simple(<<"priority">>, Priority)]).
 
