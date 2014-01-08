@@ -13,7 +13,7 @@
 -export([attr/2,
          el/3,
          el_simple/2,
-         el_xmlns/1,
+         el_xmlns/1, el_xmlns/2,
          set_attr/2,
          add_subel/2,
          get_name/1,
@@ -98,6 +98,10 @@ el_simple(Name, Content) ->
 -spec el_xmlns(binary() | string()) -> #xmlel{}.
 el_xmlns(Xmlns) ->
     el(<<"x">>, [attr(<<"xmlns">>, Xmlns)], []).
+
+-spec el_xmlns(binary() | string(), [#xmlel{} | #xmlcdata{}]) -> #xmlel{}.
+el_xmlns(Xmlns, Children) ->
+    el(<<"x">>, [attr(<<"xmlns">>, Xmlns)], Children).
 
 -spec set_attr(#xmlel{}, xmlattr()) -> #xmlel{}.
 set_attr(El, Attr) ->
@@ -381,9 +385,14 @@ privacy_el_to_tuple(#xmlel{name = <<"item">>} = El) ->
 muc_join(Room, PropList) ->
     Attrs = [{<<"to">>, xcl_jid:to_binary(Room)}],
     Children = add_el_simple([<<"status">>,
-                              <<"priority">>,
-                              <<"password">>], PropList),
-    el(<<"presence">>, Attrs, [el_xmlns(?NS_MUC) | Children]).
+                              <<"priority">>], PropList),
+    XmlnsEl = case proplists:get_value(<<"password">>, PropList) of
+        undefined ->
+            el_xmlns(?NS_MUC);
+        Password ->
+            el_xmlns(?NS_MUC, [el_simple(<<"password">>, Password)])
+    end,
+    el(<<"presence">>, Attrs, [XmlnsEl | Children]).
 
 -spec muc_leave(xcl:jid(), binary()) -> #xmlel{}.
 muc_leave(Room, Priority) ->
