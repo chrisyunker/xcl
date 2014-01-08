@@ -171,10 +171,9 @@ receive_data(Data, #state{client = Client,
 -spec process_stanza(atom(), pid(), [xmlstreamelement()]) -> atom().
 process_stanza(Action, _Client, []) ->
     Action;
-process_stanza(_Action, Client, [#xmlstreamend{} = Stanza | Tail]) ->
-    Client ! {stanza, self(), Stanza},
+process_stanza(_Action, _Client, [#xmlstreamend{} | _Tail]) ->
     xcl_log:debug("[xcl_socket] Received stream end, closing socket"),
-    process_stanza(stop, Client, Tail);
+    stop;
 process_stanza(Action, Client, [Stanza | Tail]) ->
     Client ! {stanza, self(), Stanza},
     process_stanza(Action, Client, Tail).
