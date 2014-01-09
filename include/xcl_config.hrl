@@ -1,5 +1,5 @@
 %% Configuration
--define(XCL_RECEIVE_TIMEOUT, 1000).
+-define(XCL_RECEIVE_TIMEOUT, 5000).
 -define(XCL_TCP_OPTS, [binary,
                        {active, once},
                        {packet, 0},
