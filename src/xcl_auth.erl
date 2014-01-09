@@ -34,9 +34,8 @@ auth_plain(#session{transport = Trans} = Session, Args) ->
     Stanza = xcl_stanza:auth_plain(Username, Password),
     ok = Trans:send_stanza(Session, Stanza),
     {ok, AuthEl} = xcl_session:receive_stanza(Session, auth_reply),
-    xcl_stanza:verify_auth(AuthEl).
-
-%%%===================================================================
-%%% Private functions
-%%%===================================================================
+    case xcl_stanza:verify_auth(AuthEl) of
+        true -> ok;
+        false -> throw({fail_authentication, bad_credentials})
+    end.
 

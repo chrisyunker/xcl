@@ -541,29 +541,29 @@ get_stream_feature(#xmlel{children = SubEls} = El, Features) ->
             Features
     end.
 
--spec verify_starttls(#xmlel{}) -> ok.
+-spec verify_starttls(#xmlel{}) -> boolean().
 verify_starttls(#xmlel{name = <<"proceed">>,
                        attrs = [{<<"xmlns">>, ?NS_TLS}]}) ->
-    ok;
-verify_starttls(El) ->
-    throw({fail_enable_tls, El}).
+    true;
+verify_starttls(_) ->
+    false.
 
--spec verify_compress(#xmlel{}) -> ok.
+-spec verify_compress(#xmlel{}) -> boolean().
 verify_compress(#xmlel{name = <<"compressed">>,
                        attrs = [{<<"xmlns">>, ?NS_COMPRESS}]}) ->
-    ok;
-verify_compress(El) ->
-    throw({fail_enable_compress, El}).
+    true;
+verify_compress(_) ->
+    false.
 
--spec verify_auth(#xmlel{}) -> ok.
+-spec verify_auth(#xmlel{}) -> boolean().
 verify_auth(#xmlel{name = <<"success">>}) ->
-    ok;
+    true;
 verify_auth(#xmlel{name = <<"failure">>}) ->
-    throw({fail_authentication, bad_credentials});
+    false;
 verify_auth(_) ->
-    throw({fail_authentication, bad_credentials}).
+    false.
 
--spec verify_bind(#xmlel{}) -> {ok, xcl:jid()}.
+-spec verify_bind(#xmlel{}) -> {true, xcl:jid()} | false.
 verify_bind(#xmlel{name = <<"iq">>} = El) ->
     <<"result">> = exml_query:attr(El, <<"type">>),
     BindEl = exml_query:subelement(El, <<"bind">>),
@@ -571,9 +571,9 @@ verify_bind(#xmlel{name = <<"iq">>} = El) ->
     JidEl = exml_query:subelement(BindEl, <<"jid">>),
     BinJid = exml_query:cdata(JidEl),
     Jid = xcl_jid:from_binary(BinJid),
-    {ok, Jid};
-verify_bind(El) ->
-    throw({fail_bind, El}).
+    {true, Jid};
+verify_bind(_) ->
+    false.
 
 
 %%%===================================================================

@@ -146,7 +146,10 @@ bind(#session{transport = Trans} = Session, Args) ->
         Resource = to_binary(proplists:get_value(resource, Args)),
         Trans:send_stanza(Session, xcl_stanza:bind(Resource)),
         {ok, BindEl} = receive_stanza(Session, wait_for_bind),
-        {ok, Jid} = xcl_stanza:verify_bind(BindEl),
+        Jid = case xcl_stanza:verify_bind(BindEl) of
+            {true, BindJid} -> BindJid;
+            false -> throw({fail_bind, BindEl})
+        end,
         xcl_log:debug("[xcl_session] Binded to jid: ~s", [xcl_jid:to_binary(Jid)]),
         Session#session{jid = Jid}
     catch
@@ -192,7 +195,10 @@ enable_tls(#session{transport = Trans} = Session) ->
     xcl_log:debug("[xcl_session] Enabling TLS"),
     Trans:send_stanza(Session, xcl_stanza:starttls()),
     {ok, TlsEl} = receive_stanza(Session, enable_tls),
-    xcl_stanza:verify_starttls(TlsEl),
+    case xcl_stanza:verify_starttls(TlsEl) of
+        true -> ok;
+        false -> throw({fail_enable_tls, TlsEl})
+    end,
     Session1 = Trans:enable_tls(Session),
     start_stream(Session1),
     xcl_log:debug("[xcl_session] TLS enabled"),
