@@ -79,7 +79,7 @@ receive_stanza(#session{pid = Pid}, Name) ->
         {stanza, Pid, Stanza} ->
             {ok, Stanza}
     after
-        ?XCL_RECEIVE_TIMEOUT ->
+        ?XCL_RECV_TIMEOUT ->
             case Name of
                 undefined -> throw(receive_stanza_timeout);
                 _ -> throw({receive_stanza_timeout, Name})
@@ -102,7 +102,7 @@ get_jid(#session{jid = Jid}) ->
 connect(Args) ->
     try
         check_args(Args),
-        TransType = proplists:get_value(transport, Args, ?XCL_DEFAULT_TRANSPORT),
+        TransType = proplists:get_value(transport, Args, ?XCL_DEFAULT_TRANS),
         Trans = transport_module(TransType),
         {ok, Session} = Trans:connect(Args),
         {ok, Session#session{jid = create_jid(Args)}}
