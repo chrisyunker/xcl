@@ -92,21 +92,15 @@ handle_call({connect, Args}, _From, State) ->
     end,
     xcl_log:debug("[xcl_socket] Connect socket ~s:~p with options: ~p",
          [Host, Port, Opts]),
-    case Module:connect(Host, Port, Opts, ?XCL_SOCK_CONN_TIMEOUT) of
-        {ok, Socket} ->
-            {ok, Parser} = exml_stream:new_parser(),
-            Session = #session{transport = ?MODULE,
-                               pid = self(),
-                               socket = Socket,
-                               tls = Tls},
-            {reply, Session, State#state{module = Module,
-                                         socket = Socket,
-                                         parser = Parser}};
-        {error, Reason} ->
-            xcl_log:error("[xcl_socket] Connection to ~s:~p failed with error: ~p",
-                         [Reason]),
-            {stop, normal, error, State}
-    end;
+    {ok, Socket} = Module:connect(Host, Port, Opts, ?XCL_SOCK_CONN_TIMEOUT),
+    {ok, Parser} = exml_stream:new_parser(),
+    Session = #session{transport = ?MODULE,
+                       pid = self(),
+                       socket = Socket,
+                       tls = Tls},
+    {reply, Session, State#state{module = Module,
+                                 socket = Socket,
+                                 parser = Parser}};
 handle_call({enable_tls, Session}, _From, #state{socket = Socket} = State) ->
     ssl:start(),
     xcl_log:debug("[xcl_socket] Enabling TLS with options: ~p", [?XCL_TLS_OPTS]),
