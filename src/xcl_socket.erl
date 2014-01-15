@@ -83,6 +83,7 @@ init([Client]) ->
 handle_call({connect, Args}, _From, State) ->
     Host = to_list(proplists:get_value(host, Args)),
     Port = to_integer(proplists:get_value(port, Args)),
+    LocalIps = proplists:get_value(local_ip_list, Args, []),
     {Module, Opts, Tls} = case proplists:get_value(tls, Args) of
         tls ->
             ssl:start(),
@@ -92,7 +93,7 @@ handle_call({connect, Args}, _From, State) ->
     end,
     xcl_log:debug("[xcl_socket] Connect socket ~s:~p with options: ~p",
          [Host, Port, Opts]),
-    {ok, Socket} = Module:connect(Host, Port, Opts, ?XCL_SOCK_CONN_TIMEOUT),
+    {ok, Socket} = connect_sock(Module, Host, Port, Opts, ?XCL_SOCK_CONN_TIMEOUT, LocalIps),
     {ok, Parser} = exml_stream:new_parser(),
     Session = #session{transport = ?MODULE,
                        pid = self(),
@@ -152,6 +153,20 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Private functions
 %%%===================================================================
+
+-spec connect_sock(atom(), string(), integer(), list(), integer(), list()) ->
+    {ok, term()}.
+connect_sock(Module, Host, Port, Opts, Timeout, []) ->
+    Module:connect(Host, Port, Opts, Timeout);
+connect_sock(Module, Host, Port, Opts, Timeout, [Ip | Tail]) ->
+    Opts2 = [{ip, Ip} | Opts],
+    case Module:connect(Host, Port, Opts2, Timeout) of
+        {error, eaddrinuse} when Tail /= [] ->
+            %% Try again with another local IP if there are more
+            connect_sock(Module, Host, Port, Opts, Timeout, Tail);
+        Result ->
+            Result
+    end.
 
 -spec receive_data(binary(), #state{}) ->
     {noreply, #state{}} | {stop, normal, #state{}}.
