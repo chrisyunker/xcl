@@ -71,7 +71,7 @@ get_local_ips() ->
     {ok, Ifs} = inet:getifaddrs(),
     lists:foldl(fun process_if/2, [], Ifs).
 
--spec process_if([tuple()], [tuple()]) -> [tuple()].
+-spec process_if(list(), list()) -> list().
 process_if({_, If}, Acc) ->
     {flags, Flags} = lists:keyfind(flags, 1, If),
     case not lists:member(loopback, Flags) andalso
@@ -88,7 +88,7 @@ process_if({_, If}, Acc) ->
 process_if(_, Acc) ->
     Acc.
 
--spec extract_addr([tuple()]) -> {integer(), integer(), integer(), integer()} | false.
+-spec extract_addr(list()) -> {integer(), integer(), integer(), integer()} | false.
 extract_addr([]) ->
     false;
 extract_addr([{addr, {A, B, C, D}} | _]) ->

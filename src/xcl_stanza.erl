@@ -180,7 +180,7 @@ iq_set(Id, Xmlns, Children) ->
 %%% Presence stanzas
 %%%-------------------------------------------------------------------
 
--spec presence([tuple()]) -> #xmlel{}.
+-spec presence(list()) -> #xmlel{}.
 presence(PropList) ->
     Children = add_el_simple([<<"status">>,
                               <<"priority">>,
@@ -197,7 +197,7 @@ presence_roster(To, Type, Priority) ->
 %%% Message stanzas
 %%%-------------------------------------------------------------------
 
--spec message(binary(), binary(), xcl:jid(), [tuple()]) -> #xmlel{}.
+-spec message(binary(), binary(), xcl:jid(), list()) -> #xmlel{}.
 message(Id, Type, To, PropList) ->
     Children = add_el_simple([<<"body">>,
                               <<"subject">>], PropList),
@@ -299,7 +299,7 @@ privacy_req_lists(Id, Lists) ->
     ListEls = [el(<<"list">>, [{<<"name">>, List}], []) || List <- Lists],
     iq_get(Id, ?NS_PRIVACY, ListEls).
 
--spec privacy_set_list(binary(), binary(), [tuple()]) -> #xmlel{}.
+-spec privacy_set_list(binary(), binary(), list()) -> #xmlel{}.
 privacy_set_list(Id, Name, Items) ->
     ItemEls = lists:map(fun privacy_tuple_to_el/1, Items),
     AddEl = el(<<"list">>, [{<<"name">>, Name}], ItemEls),
@@ -358,7 +358,7 @@ get_privacy_list_name(#xmlel{name = Type} = El, Acc) ->
 get_privacy_list_name(_, Acc) ->
     Acc.
 
--spec get_privacy_list(#xmlel{}) -> undefined | {binary(), [tuple()]}.
+-spec get_privacy_list(#xmlel{}) -> undefined | {binary(), list()}.
 get_privacy_list(El) ->
     case exml_query:path(El, [{element, <<"query">>},
                               {element, <<"list">>}], undefined) of
@@ -381,7 +381,7 @@ privacy_el_to_tuple(#xmlel{name = <<"item">>} = El) ->
 %%% MUC stanzas
 %%%-------------------------------------------------------------------
 
--spec muc_join(xcl:jid(), [tuple()]) -> #xmlel{}.
+-spec muc_join(xcl:jid(), list()) -> #xmlel{}.
 muc_join(Room, PropList) ->
     Attrs = [{<<"to">>, xcl_jid:to_binary(Room)}],
     Children = add_el_simple([<<"status">>,
@@ -520,13 +520,13 @@ session() ->
     Session = el(<<"session">>, [{<<"xmlns">>, ?NS_SESSION}], []),
     iq(id(), <<"set">>, [Session]).
 
--spec get_stream_features(#xmlel{}) -> [tuple()].
+-spec get_stream_features(#xmlel{}) -> list().
 get_stream_features(#xmlel{name = <<"stream:features">>, children = SubEls}) ->
     lists:foldl(fun get_stream_feature/2, [], SubEls);
 get_stream_features(_) ->
     [].
 
--spec get_stream_feature(#xmlel{}, [tuple()]) -> [tuple()].
+-spec get_stream_feature(#xmlel{}, list()) -> list().
 get_stream_feature(#xmlel{children = SubEls} = El, Features) ->
     case exml_query:attr(El, <<"xmlns">>) of
         ?NS_FEATURE_COMPRESS ->
@@ -580,11 +580,11 @@ verify_bind(_) ->
 %%% Private functions
 %%%===================================================================
 
--spec add_el_simple([binary()], [tuple()]) -> [#xmlel{}].
+-spec add_el_simple([binary()], list()) -> [#xmlel{}].
 add_el_simple(Keys, PropList) ->
     add_el_simple(Keys, PropList, []).
 
--spec add_el_simple([binary()], [tuple()], [#xmlel{}]) -> [#xmlel{}].
+-spec add_el_simple([binary()], list(), [#xmlel{}]) -> [#xmlel{}].
 add_el_simple([], _PropList, Acc) ->
     Acc;
 add_el_simple([Key | Tail], PropList, Acc) ->

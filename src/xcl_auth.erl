@@ -18,7 +18,7 @@
 %%% Public API
 %%%===================================================================
 
--spec authenticate(xcl:session(), [tuple()]) -> ok.
+-spec authenticate(xcl:session(), list()) -> ok.
 authenticate(Session, Args) ->
     Type = proplists:get_value(auth, Args, ?XCL_DEFAULT_AUTH),
     case Type of
@@ -27,7 +27,7 @@ authenticate(Session, Args) ->
             throw({fail_authentication, auth_type_not_supported})
     end.
 
--spec auth_plain(xcl:session(), [tuple()]) -> ok.
+-spec auth_plain(xcl:session(), list()) -> ok.
 auth_plain(#session{transport = Trans} = Session, Args) ->
     Username = to_binary(proplists:get_value(username, Args)),
     Password = to_binary(proplists:get_value(password, Args)),

@@ -24,7 +24,7 @@
 %%% Public API
 %%%===================================================================
 
--spec start([term()]) -> {ok, xcl:session()} | {error, term()}.
+-spec start(list()) -> {ok, xcl:session()} | {error, term()}.
 start(Args) ->
     xcl_log:debug("[xcl_session] Starting session"),
     case connect(Args) of
@@ -98,7 +98,7 @@ get_jid(#session{jid = Jid}) ->
 %%% Private functions
 %%%===================================================================
 
--spec connect([term()]) -> {ok, xcl:session()} | {error, term()}.
+-spec connect(list()) -> {ok, xcl:session()} | {error, term()}.
 connect(Args) ->
     try
         check_args(Args),
@@ -111,7 +111,7 @@ connect(Args) ->
             {error, {connect_error, Reason}}
     end.
 
--spec start_stream(xcl:session()) -> [tuple()].
+-spec start_stream(xcl:session()) -> list().
 start_stream(#session{transport = Trans, jid = Jid} = Session) ->
     xcl_log:debug("[xcl_session] Starting stream"),
     try
@@ -169,7 +169,7 @@ session(#session{transport = Trans} = Session) ->
             throw({session_error, {session_error, Reason}})
     end.
 
--spec negotiate_tls(xcl:session(), [term()], [term()]) -> xcl:session().
+-spec negotiate_tls(xcl:session(), list(), list()) -> xcl:session().
 negotiate_tls(Session, Args, Features) ->
     xcl_log:debug("[xcl_session] Negotiate TLS"),
     %% client: none | starttls | tls
@@ -204,12 +204,12 @@ enable_tls(#session{transport = Trans} = Session) ->
     xcl_log:debug("[xcl_session] TLS enabled"),
     Session1.
 
--spec negotiate_compression(xcl:session(), [term()], [term()]) -> xcl:session().
+-spec negotiate_compression(xcl:session(), list(), list()) -> xcl:session().
 negotiate_compression(Session, _Args, _Features) ->
     %% Not supported yet
     Session.
 
--spec check_args([tuple()]) -> ok.
+-spec check_args(list()) -> ok.
 check_args(Args) ->
     ReqArgs = [username,
                password,
@@ -229,7 +229,7 @@ transport_module(socket) -> xcl_socket;
 transport_module(bosh) ->   xcl_bosh;
 transport_module(ws) ->     xcl_ws.
 
--spec create_jid([tuple()]) -> xcl:jid().
+-spec create_jid(list()) -> xcl:jid().
 create_jid(Args) ->
     xcl_jid:make(proplists:get_value(username, Args),
                  proplists:get_value(domain, Args),

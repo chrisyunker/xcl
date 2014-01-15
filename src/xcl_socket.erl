@@ -39,7 +39,7 @@
 %%% API
 %%%===================================================================
 
--spec connect([tuple()]) -> {ok, xcl:session()}.
+-spec connect(list()) -> {ok, xcl:session()}.
 connect(Args) ->
     {ok, Pid} = gen_server:start_link(?MODULE, [self()], []),
     Session = gen_server:call(Pid, {connect, Args}, ?XCL_TRANS_CONN_TIMEOUT),
@@ -218,7 +218,7 @@ socket_closed(Event, #state{client = Client} = State) ->
     Client ! {Event, self()},
     {stop, normal, State}.
 
--spec setopts(atom(), term(), [term()]) -> ok | {error, atom()}.
+-spec setopts(atom(), term(), list()) -> ok | {error, atom()}.
 setopts(gen_tcp, Socket, Opts) ->
     inet:setopts(Socket, Opts);
 setopts(Module, Socket, Opts) ->
