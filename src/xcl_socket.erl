@@ -170,28 +170,25 @@ connect_sock(Module, Host, Port, Opts, Timeout, [Ip | Tail]) ->
 
 -spec receive_data(binary(), #state{}) ->
     {noreply, #state{}} | {stop, normal, #state{}}.
-receive_data(Data, #state{client = Client,
-                          parser = Parser,
+receive_data(Data, #state{parser = Parser,
                           module = Module,
                           socket = Socket} = State) ->
     setopts(Module, Socket, [{active, once}]),
     {ok, Parser1, Stanzas} = exml_stream:parse(Parser, Data),
-    State1 = State#state{parser = Parser1},
-    Action = process_stanza(continue, Client, Stanzas),
-    case Action of
-        continue -> {noreply, State1};
-        stop -> {stop, normal, State1}
-    end.
+    process_stanzas(Stanzas, State#state{parser = Parser1}).
 
--spec process_stanza(atom(), pid(), [xmlstreamelement()]) -> atom().
-process_stanza(Action, _Client, []) ->
-    Action;
-process_stanza(_Action, _Client, [#xmlstreamend{} | _Tail]) ->
+-spec process_stanzas([xmlstreamelement()], #state{}) ->
+    {noreply, #state{}} | {stop, normal, #state{}}.
+process_stanzas([], State) ->
+    {noreply, State};
+process_stanzas([#xmlstreamend{} | _Tail], State) ->
     xcl_log:debug("[xcl_socket] Received stream end, closing socket"),
-    stop;
-process_stanza(Action, Client, [Stanza | Tail]) ->
+    {stop, normal, State};
+process_stanzas([#xmlel{name = <<"stream:error">>} = Stanza | _Tail], State) ->
+    stream_error(Stanza, State);
+process_stanzas([Stanza | Tail], #state{client = Client} = State) ->
     Client ! {stanza, self(), Stanza},
-    process_stanza(Action, Client, Tail).
+    process_stanzas(Tail, State).
 
 -spec free_socket(#state{}) -> any().
 free_socket(#state{socket = undefined}) ->
@@ -211,6 +208,12 @@ socket_error(Event, Reason, #state{module = Module, socket = Socket} = State) ->
          [Event, Reason]),
     setopts(Module, Socket, [{active, once}]),
     {noreply, State}.
+
+-spec stream_error(#xmlel{}, #state{}) -> {stop, normal, #state{}}.
+stream_error(Stanza, #state{client = Client} = State) ->
+    xcl_log:warning("[xcl_socket] Received stream error, closing socket [~p]", [Stanza]),
+    Client ! {stream_error, self(), Stanza},
+    {stop, normal, State}.
 
 -spec socket_closed(atom(), #state{}) -> {stop, normal, #state{}}.
 socket_closed(Event, #state{client = Client} = State) ->
