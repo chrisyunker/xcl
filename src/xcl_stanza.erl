@@ -83,7 +83,7 @@
 
 -spec attr(binary() | string(), binary() | string()) -> xmlattr().
 attr(Name, Value) ->
-    {to_binary(Name), to_binary(Value)}.
+    {to_binary(Name), exml:escape_attr(to_binary(Value))}.
 
 -spec el(binary() | string(), [xmlattr()], [#xmlel{} | #xmlcdata{}]) -> #xmlel{}.
 el(Name, Attrs, Children) ->
