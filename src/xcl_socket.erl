@@ -39,11 +39,10 @@
 %%% API
 %%%===================================================================
 
--spec connect(list()) -> {ok, xcl:session()}.
+-spec connect(list()) -> {ok, xcl:session()} | {error, term()}.
 connect(Args) ->
     {ok, Pid} = gen_server:start_link(?MODULE, [self()], []),
-    Session = gen_server:call(Pid, {connect, Args}, ?XCL_TRANS_CONN_TIMEOUT),
-    {ok, Session}.
+    gen_server:call(Pid, {connect, Args}, ?XCL_TRANS_CONN_TIMEOUT).
 
 -spec disconnect(xcl:session()) -> ok | not_connected.
 disconnect(#session{pid = Pid}) ->
@@ -93,15 +92,20 @@ handle_call({connect, Args}, _From, State) ->
     end,
     xcl_log:debug("[xcl_socket] Connect socket ~s:~p with options: ~p",
          [Host, Port, Opts]),
-    {ok, Socket} = connect_sock(Module, Host, Port, Opts, ?XCL_SOCK_CONN_TIMEOUT, LocalIps),
-    {ok, Parser} = exml_stream:new_parser(),
-    Session = #session{transport = ?MODULE,
-                       pid = self(),
-                       socket = Socket,
-                       tls = Tls},
-    {reply, Session, State#state{module = Module,
-                                 socket = Socket,
-                                 parser = Parser}};
+    case connect_sock(Module, Host, Port, Opts, ?XCL_SOCK_CONN_TIMEOUT, LocalIps) of
+        {ok, Socket} ->
+            {ok, Parser} = exml_stream:new_parser(),
+            Session = #session{transport = ?MODULE,
+                               pid = self(),
+                               socket = Socket,
+                               tls = Tls},
+            {reply, {ok, Session}, State#state{module = Module,
+                                               socket = Socket,
+                                               parser = Parser}};
+        {error, Error} ->
+            xcl_log:error("Failed socket connection: ~p", [Error]),
+            {stop, normal, {error, Error}, State}
+    end;
 handle_call({enable_tls, Session}, _From, #state{socket = Socket} = State) ->
     ssl:start(),
     xcl_log:debug("[xcl_socket] Enabling TLS with options: ~p", [?XCL_TLS_OPTS]),
@@ -155,7 +159,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 
 -spec connect_sock(atom(), string(), integer(), list(), integer(), list()) ->
-    {ok, term()}.
+    {ok, term()} | {error, term()}.
 connect_sock(Module, Host, Port, Opts, Timeout, []) ->
     Module:connect(Host, Port, Opts, Timeout);
 connect_sock(Module, Host, Port, Opts, Timeout, [Ip | Tail]) ->
