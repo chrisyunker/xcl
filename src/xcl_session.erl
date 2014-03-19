@@ -104,8 +104,12 @@ connect(Args) ->
         check_args(Args),
         TransType = proplists:get_value(transport, Args, ?XCL_DEFAULT_TRANS),
         Trans = transport_module(TransType),
-        {ok, Session} = Trans:connect(Args),
-        {ok, Session#session{jid = create_jid(Args)}}
+        case Trans:connect(Args) of
+            {ok, Session} ->
+                {ok, Session#session{jid = create_jid(Args)}};
+            {error, Error} ->
+                {error, {connect_error, Error}}
+        end
     catch
         _:Reason ->
             {error, {connect_error, Reason}}
