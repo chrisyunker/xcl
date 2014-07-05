@@ -8,6 +8,7 @@
 
 -define(XCL_TRANS_CONN_TIMEOUT, 6000).
 -define(XCL_SOCK_CONN_TIMEOUT, 5000).
+-define(XCL_WS_HANDSHAKE_TIMEOUT, 3000).
 
 %% Default Options
 -define(XCL_DEFAULT_AUTH, plain).

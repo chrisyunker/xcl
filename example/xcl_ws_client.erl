@@ -1,13 +1,13 @@
--module(xcl_client).
+-module(xcl_ws_client).
 
 -include("xcl.hrl").
 -include("xcl_config.hrl").
 
--export([test_roster/1,
-         test_privacy/1,
-         test_muc/1]).
+-export([test_roster/0,
+         test_privacy/0,
+         test_muc/0]).
 
--export([connect/3,
+-export([connect/2,
          get_roster_list/1,
          get_privacy_lists/1,
          get_privacy_list/2,
@@ -21,6 +21,8 @@
 -define(EXL_MUC_DOMAIN, "conference.yunker.io").
 -define(EXL_RESOURCE, "xcl").
 -define(EXL_HOST, "localhost").
+-define(EXL_PATH, "/xmpp-websocket").
+-define(EXL_PORT, 5280).
 -define(EXL_LOG_LEVEL, debug).
 
 
@@ -28,21 +30,21 @@
 %%% API
 %%%===================================================================
 
-test_roster(Type) ->
-    {ok, S1} = connect(Type, ?EXL_USERNAME_1, ?EXL_PASSWORD_1),
+test_roster() ->
+    {ok, S1} = connect(?EXL_USERNAME_1, ?EXL_PASSWORD_1),
     get_roster_list(S1),
     disconnect(S1).
 
-test_privacy(Type) ->
-    {ok, S1} = connect(Type, ?EXL_USERNAME_1, ?EXL_PASSWORD_1),
+test_privacy() ->
+    {ok, S1} = connect(?EXL_USERNAME_1, ?EXL_PASSWORD_1),
     Lists = get_privacy_lists(S1),
     {_, DefaultList} = lists:keyfind(<<"default">>, 1, Lists),
     get_privacy_list(S1, DefaultList),
     disconnect(S1).
 
-test_muc(Type) ->
-    {ok, S1} = connect(Type, ?EXL_USERNAME_1, ?EXL_PASSWORD_1),
-    {ok, S2} = connect(Type, ?EXL_USERNAME_2, ?EXL_PASSWORD_2),
+test_muc() ->
+    {ok, S1} = connect(?EXL_USERNAME_1, ?EXL_PASSWORD_1),
+    {ok, S2} = connect(?EXL_USERNAME_2, ?EXL_PASSWORD_2),
     Room = xcl_jid:make(<<"room1">>, ?EXL_MUC_DOMAIN, <<"nick1">>),
     muc_join(S1, Room),
     muc_disco(S2, Room),
@@ -68,22 +70,19 @@ muc_disco(Session, Room) ->
                   [xcl_jid:bare_to_binary(Room), xcl_util:to_integer(Count)]),
     Count.
 
-connect(Type, Username, Password) ->
+connect(Username, Password) ->
     start_lager(),
-    {Tls, Port} = case Type of
-        plain ->    {none, 5222};
-        starttls -> {starttls, 5222};
-        tls ->      {tls, 5223}
-    end,
     Args = [{username, Username},
+            {password, Password},
             {domain, ?EXL_DOMAIN},
             {resource, ?EXL_RESOURCE},
-            {password, Password},
             {host, ?EXL_HOST},
-            {port, Port},
-            {transport, socket},
+            {port, ?EXL_PORT},
+            {path, ?EXL_PATH},
+            {transport, ws},
+            {legacy_ws, true},
             {auth, plain},
-            {tls, Tls},
+            {tls, none},
             {compress, none}],
     case xcl_session:start(Args) of
         {ok, Session} ->

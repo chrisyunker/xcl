@@ -59,6 +59,8 @@
 
 -export([stream_start/2,
          stream_end/0,
+         ws_open/1,
+         ws_close/0,
          starttls/0,
          compress/1,
          auth/2,
@@ -484,6 +486,16 @@ stream_start2(Server, Xmlns) ->
 -spec stream_end() -> xmlstreamelement().
 stream_end() ->
     #xmlstreamend{name = <<"stream:stream">>}.
+
+-spec ws_open(binary()) -> #xmlel{}.
+ws_open(Server) ->
+    el(<<"open">>, [{<<"xmlns">>, ?NS_FRAMING},
+                    {<<"to">>, Server},
+                    {<<"version">>,<<"1.0">>}], []).
+
+-spec ws_close() -> #xmlel{}. 
+ws_close() ->
+    el(<<"close">>, [{<<"xmlns">>, ?NS_FRAMING}], []).
 
 -spec starttls() -> #xmlel{}.
 starttls() ->

@@ -1,7 +1,7 @@
 %%%-------------------------------------------------------------------
 %%% @author Chris Yunker <chris@yunker.io>
 %%% @copyright (C) 2014, Chris Yunker
-%%% @doc Socket transport implementation
+%%% @doc TCP/SSL Socket transport implementation
 %%%
 %%% @end
 %%%-------------------------------------------------------------------
@@ -13,7 +13,9 @@
 
 -behaviour(gen_server).
 
--export([connect/1,
+%% transport implementation
+-export([check_args/1,
+         connect/1,
          disconnect/1,
          start_stream/1,
          end_stream/1,
@@ -22,6 +24,7 @@
          reset_parser/1,
          is_connected/1]).
 
+%% gen_server callbacks
 -export([init/1,
          handle_call/3,
          handle_cast/2,
@@ -41,6 +44,21 @@
 %%% API
 %%%===================================================================
 
+-spec check_args(list()) -> ok.
+check_args(Args) ->
+    ReqArgs = [username,
+               password,
+               host,
+               port,
+               domain,
+               resource],
+    lists:foreach(fun(ReqArg) ->
+                case lists:keyfind(ReqArg, 1, Args) of
+                    false -> throw({missing_argument, ReqArg});
+                    _ -> ok
+                end
+        end, ReqArgs).
+
 -spec connect(list()) -> {ok, xcl:session()} | {error, term()}.
 connect(Args) ->
     {ok, Pid} = gen_server:start_link(?MODULE, [self()], []),
@@ -55,18 +73,13 @@ disconnect(#session{pid = Pid}) ->
             not_connected
     end.
 
--spec start_stream(xcl:session()) -> list().
+-spec start_stream(xcl:session()) -> ok | {error, term()}.
 start_stream(#session{jid = Jid} = Session) ->
-    send_stanza(Session, xcl_stanza:stream_start(Jid#jid.domain, client)),
-    {ok, _StreamEl} = xcl_session:receive_stanza(Session, wait_for_stream_start),
-    {ok, FeaturesEl} = xcl_session:receive_stanza(Session, wait_for_features),
-    xcl_stanza:get_stream_features(FeaturesEl).
+    send_stanza(Session, xcl_stanza:stream_start(Jid#jid.domain, client)).
 
--spec end_stream(xcl:session()) -> ok.
+-spec end_stream(xcl:session()) -> ok | {error, term()}.
 end_stream(Session) ->
-    send_stanza(Session, xcl_stanza:stream_end()),
-    {ok, _StreamEl} = xcl_session:receive_stanza(Session, wait_for_stream_end),
-    ok.
+    send_stanza(Session, xcl_stanza:stream_end()).
 
 -spec send_stanza(xcl:session(), xmlstreamelement()) -> ok | {error, term()}.
 send_stanza(#session{socket = Socket, tls = true}, El) ->

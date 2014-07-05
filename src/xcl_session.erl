@@ -53,6 +53,7 @@ stop(#session{transport = Trans} = Session) ->
         true ->
             try
                 Trans:end_stream(Session),
+                {ok, _StreamEl} = receive_stanza(Session, wait_for_stream_end),
                 xcl_log:debug("[xcl_session] Server ended stream"),
                 ok
             catch
@@ -100,9 +101,9 @@ get_jid(#session{jid = Jid}) ->
 -spec connect(list()) -> {ok, xcl:session()} | {error, term()}.
 connect(Args) ->
     try
-        check_args(Args),
         TransType = proplists:get_value(transport, Args, ?XCL_DEFAULT_TRANS),
         Trans = transport_module(TransType),
+        Trans:check_args(Args),
         case Trans:connect(Args) of
             {ok, Session} ->
                 {ok, Session#session{jid = create_jid(Args)}};
@@ -118,7 +119,10 @@ connect(Args) ->
 start_stream(#session{transport = Trans} = Session) ->
     xcl_log:debug("[xcl_session] Starting stream"),
     try
-        Features = Trans:start_stream(Session),
+        Trans:start_stream(Session),
+        {ok, _StreamEl} = receive_stanza(Session, wait_for_stream_start),
+        {ok, FeaturesEl} = receive_stanza(Session, wait_for_features),
+        Features = xcl_stanza:get_stream_features(FeaturesEl),
         xcl_log:debug("[xcl_session] Stream features: ~p", [Features]),
         Features
     catch
@@ -207,21 +211,6 @@ enable_tls(#session{transport = Trans} = Session) ->
 negotiate_compression(Session, _Args, _Features) ->
     %% Not supported yet
     Session.
-
--spec check_args(list()) -> ok.
-check_args(Args) ->
-    ReqArgs = [username,
-               password,
-               host,
-               port,
-               domain,
-               resource],
-    lists:foreach(fun(ReqArg) ->
-                case lists:keyfind(ReqArg, 1, Args) of
-                    false -> throw({missing_argument, ReqArg});
-                    _ -> ok
-                end
-        end, ReqArgs).
 
 -spec transport_module(atom()) -> atom().
 transport_module(socket) -> xcl_socket;

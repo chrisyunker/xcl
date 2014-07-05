@@ -3,4 +3,11 @@ erl_syntax_lib:
 lager_default_tracer:
 src/lager
 src/exml
+src/hamcrest
+src/cucumberl_cli
+src/wsock_http
+src/meck
+src/mock_http_server
+src/espec
+src/wsecli
 gre:event

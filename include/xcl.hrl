@@ -50,3 +50,5 @@
 -define(NS_COMPRESS, <<"http://jabber.org/protocol/compress">>).
 -define(NS_FEATURE_COMPRESS, <<"http://jabber.org/features/compress">>).
 
+%% draft-ietf-xmpp-websocket-07
+-define(NS_FRAMING, <<"urn:ietf:params:xml:ns:xmpp-framing">>).
