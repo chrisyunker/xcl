@@ -15,7 +15,7 @@ app:
 	./rebar compile skip_deps=true -f
 
 test: compile
-	./rebar eunit
+	./rebar eunit skip_deps=true
 
 clean: rebar
 	./rebar clean
