@@ -10,26 +10,27 @@
 -include_lib("exml/include/exml_stream.hrl").
 -include("xcl.hrl").
 
--export([attr/2,
-         el/3,
-         el_simple/2,
-         el_xmlns/1, el_xmlns/2,
-         set_attr/2,
-         add_subel/2,
-         get_name/1,
+-export([el_xmlns/1, el_xmlns/2,
+         get_sender/1,
+         set_sender/2,
+         get_recipient/1,
+         set_recipient/2,
          get_id/1,
          get_type/1,
-         get_sender/1,
-         get_recipient/1,
          get_xmlns/1,
          get_error/1]).
 
 -export([iq/3,
          iq_get/3,
          iq_set/3,
+         get_iq_result/1,
          presence/1,
          presence_roster/3,
+         get_presence_type/1,
+         get_presence_status/1,
+         get_presence_show/1,
          message/4,
+         get_message_type/1,
          get_message_body/1,
          get_message_subject/1]).
 
@@ -83,41 +84,29 @@
 %%% Core functions
 %%%-------------------------------------------------------------------
 
--spec attr(binary() | string(), binary() | string()) -> xmlattr().
-attr(Name, Value) ->
-    {to_binary(Name), exml:escape_attr(to_binary(Value))}.
-
--spec el(binary() | string(), [xmlattr()], [#xmlel{} | #xmlcdata{}]) -> #xmlel{}.
-el(Name, Attrs, Children) ->
-    #xmlel{name = to_binary(Name),
-           attrs = Attrs,
-           children = Children}.
-
--spec el_simple(binary() | string(), iodata()) -> #xmlel{}.
-el_simple(Name, Content) ->
-    el(Name, [], [exml:escape_cdata(Content)]).
-
 -spec el_xmlns(binary() | string()) -> #xmlel{}.
 el_xmlns(Xmlns) ->
-    el(<<"x">>, [attr(<<"xmlns">>, Xmlns)], []).
+    xcl_xml:el(<<"x">>, [xcl_xml:attr(<<"xmlns">>, Xmlns)], []).
 
 -spec el_xmlns(binary() | string(), [#xmlel{} | #xmlcdata{}]) -> #xmlel{}.
 el_xmlns(Xmlns, Children) ->
-    el(<<"x">>, [attr(<<"xmlns">>, Xmlns)], Children).
+    xcl_xml:el(<<"x">>, [xcl_xml:attr(<<"xmlns">>, Xmlns)], Children).
 
--spec set_attr(#xmlel{}, xmlattr()) -> #xmlel{}.
-set_attr(El, Attr) ->
-    El#xmlel{attrs = lists:keystore(element(1, Attr), 1, El#xmlel.attrs, Attr)}.
+-spec get_sender(#xmlel{}) -> binary() | undefined.
+get_sender(El) ->
+    exml_query:attr(El, <<"from">>, undefined).
 
--spec add_subel(#xmlel{}, #xmlel{} | [#xmlel{}]) -> #xmlel{}.
-add_subel(El, SubEls) when is_list(SubEls) ->
-    El#xmlel{children = SubEls ++ El#xmlel.children};
-add_subel(El, SubEl) ->
-    add_subel(El, [SubEl]).
+-spec set_sender(#xmlel{}, binary()) -> #xmlel{}.
+set_sender(El, Sender) ->
+    xcl_xml:set_attr(El, {<<"from">>, Sender}).
 
--spec get_name(#xmlel{}) -> binary().
-get_name(#xmlel{name = Name}) ->
-    Name.
+-spec get_recipient(#xmlel{}) -> binary() | undefined.
+get_recipient(El) ->
+    exml_query:attr(El, <<"to">>, undefined).
+
+-spec set_recipient(#xmlel{}, binary()) -> #xmlel{}.
+set_recipient(El, Recipient) ->
+    xcl_xml:set_attr(El, {<<"to">>, Recipient}).
 
 -spec get_id(#xmlel{}) -> binary() | undefined.
 get_id(El) ->
@@ -126,14 +115,6 @@ get_id(El) ->
 -spec get_type(#xmlel{}) -> binary() | undefined.
 get_type(El) ->
     exml_query:attr(El, <<"type">>, undefined).
-
--spec get_sender(#xmlel{}) -> binary() | undefined.
-get_sender(El) ->
-    exml_query:attr(El, <<"from">>, undefined).
-
--spec get_recipient(#xmlel{}) -> binary() | undefined.
-get_recipient(El) ->
-    exml_query:attr(El, <<"to">>, undefined).
 
 -spec get_xmlns(#xmlel{}) -> binary() | undefined.
 get_xmlns(El) ->
@@ -178,6 +159,12 @@ iq_set(Id, Xmlns, Children) ->
                               attrs = [{<<"xmlns">>, to_binary(Xmlns)}],
                               children = Children}]).
 
+-spec get_iq_result(#xmlel{}) -> #xmlel{} | undefined.
+get_iq_result(#xmlel{name = <<"iq">>, children = Result} = El) ->
+    case get_type(El) of
+        <<"result">> -> Result;
+        _            -> undefined
+    end.
 
 %%% Presence stanzas
 %%%-------------------------------------------------------------------
@@ -187,14 +174,31 @@ presence(PropList) ->
     Children = add_el_simple([<<"status">>,
                               <<"priority">>,
                               <<"show">>], PropList),
-    el(<<"presence">>, [], Children).
+    xcl_xml:el(<<"presence">>, [], Children).
 
 -spec presence_roster(xcl:jid(), binary(), binary()) -> #xmlel{}.
 presence_roster(To, Type, Priority) ->
     Attrs = [{<<"to">>, xcl_jid:bare_to_binary(To)},
              {<<"type">>, to_binary(Type)}],
-    el(<<"presence">>, Attrs, [el_simple(<<"priority">>, Priority)]).
+    xcl_xml:el(<<"presence">>, Attrs, [xcl_xml:el_simple(<<"priority">>, Priority)]).
 
+-spec get_presence_type(#xmlel{}) -> binary() | undefined.
+get_presence_type(#xmlel{name = <<"presence">>} = El) ->
+    exml_query:attr(El, <<"type">>, undefined).
+
+-spec get_presence_status(#xmlel{}) -> binary() | undefined.
+get_presence_status(#xmlel{name = <<"presence">>} = El) ->
+    case xcl_xml:get_subelement(El, <<"status">>) of
+        undefined -> undefined;
+        StatusEl -> exml_query:cdata(StatusEl)
+    end.
+
+-spec get_presence_show(#xmlel{}) -> binary() | undefined.
+get_presence_show(#xmlel{name = <<"presence">>} = El) ->
+    case xcl_xml:get_subelement(El, <<"show">>) of
+        undefined -> undefined;
+        ShowEl -> exml_query:cdata(ShowEl)
+    end.
 
 %%% Message stanzas
 %%%-------------------------------------------------------------------
@@ -206,7 +210,11 @@ message(Id, Type, To, PropList) ->
     Attrs = [{<<"id">>, to_binary(Id)},
              {<<"type">>, to_binary(Type)},
              {<<"to">>, xcl_jid:to_binary(To)}],
-    el(<<"message">>, Attrs, Children).
+    xcl_xml:el(<<"message">>, Attrs, Children).
+
+-spec get_message_type(#xmlel{}) -> binary() | undefined.
+get_message_type(#xmlel{name = <<"message">>} = El) ->
+    exml_query:attr(El, <<"type">>, undefined).
 
 -spec get_message_body(#xmlel{}) -> binary() | undefined.
 get_message_body(El) ->
@@ -251,8 +259,8 @@ roster_set_item({Jid, Name, Groups}) ->
     Attrs = [{<<"jid">>, xcl_jid:bare_to_binary(Jid)},
              {<<"name">>, Name},
              {<<"subscription">>, <<"add">>}],
-    GroupEls = [el_simple(<<"group">>, G) || G <- Groups],
-    el(<<"item">>, Attrs, GroupEls).
+    GroupEls = [xcl_xml:el_simple(<<"group">>, G) || G <- Groups],
+    xcl_xml:el(<<"item">>, Attrs, GroupEls).
 
 -spec roster_remove_item(binary(), xcl:jid()) -> #xmlel{}.
 roster_remove_item(Id, Jid) ->
@@ -266,7 +274,7 @@ roster_remove_items(Id, Jids) ->
 roster_remove_item(Jid) ->
     Attrs = [{<<"jid">>, xcl_jid:bare_to_binary(Jid)},
              {<<"subscription">>, <<"remove">>}],
-    el(<<"item">>, Attrs, []).
+    xcl_xml:el(<<"item">>, Attrs, []).
 
 -spec get_roster_list(#xmlel{}) -> [{binary(), xcl:jid(), binary(), list()}].
 get_roster_list(El) ->
@@ -298,21 +306,21 @@ privacy_req_list_names(Id) ->
 
 -spec privacy_req_lists(binary(), [binary()]) -> #xmlel{}.
 privacy_req_lists(Id, Lists) ->
-    ListEls = [el(<<"list">>, [{<<"name">>, List}], []) || List <- Lists],
+    ListEls = [xcl_xml:el(<<"list">>, [{<<"name">>, List}], []) || List <- Lists],
     iq_get(Id, ?NS_PRIVACY, ListEls).
 
 -spec privacy_set_list(binary(), binary(), list()) -> #xmlel{}.
 privacy_set_list(Id, Name, Items) ->
     ItemEls = lists:map(fun privacy_tuple_to_el/1, Items),
-    AddEl = el(<<"list">>, [{<<"name">>, Name}], ItemEls),
+    AddEl = xcl_xml:el(<<"list">>, [{<<"name">>, Name}], ItemEls),
     iq_set(Id, ?NS_PRIVACY, [AddEl]).
 
 -spec privacy_tuple_to_el({binary(), binary(), binary(), binary()}) -> #xmlel{}.
 privacy_tuple_to_el({Action, Type, Value, Order}) ->
-    el(<<"item">>, [{<<"action">>, Action},
-                    {<<"order">>, Order},
-                    {<<"type">>, Type},
-                    {<<"value">>, Value}], []).
+    xcl_xml:el(<<"item">>, [{<<"action">>, Action},
+                            {<<"order">>, Order},
+                            {<<"type">>, Type},
+                            {<<"value">>, Value}], []).
 
 -spec privacy_set_default(binary(), binary()) -> #xmlel{}.
 privacy_set_default(Id, Name) ->
@@ -332,12 +340,12 @@ privacy_unset_active(Id) ->
 
 -spec privacy_set_list_type(binary(), binary(), binary()) -> #xmlel{}.
 privacy_set_list_type(Id, Type, Name) ->
-    El = el(Type, [{<<"name">>, Name}], []),
+    El = xcl_xml:el(Type, [{<<"name">>, Name}], []),
     iq_set(Id, ?NS_PRIVACY, [El]).
 
 -spec privacy_unset_list_type(binary(), binary()) -> #xmlel{}.
 privacy_unset_list_type(Id, Type) ->
-    El = el(Type, [], []),
+    El = xcl_xml:el(Type, [], []),
     iq_set(Id, ?NS_PRIVACY, [El]).
 
 -spec get_privacy_list_names(#xmlel{}) -> [{binary(), binary()}].
@@ -392,25 +400,26 @@ muc_join(Room, PropList) ->
         undefined ->
             el_xmlns(?NS_MUC);
         Password ->
-            el_xmlns(?NS_MUC, [el_simple(<<"password">>, Password)])
+            el_xmlns(?NS_MUC, [xcl_xml:el_simple(<<"password">>, Password)])
     end,
-    el(<<"presence">>, Attrs, [XmlnsEl | Children]).
+    xcl_xml:el(<<"presence">>, Attrs, [XmlnsEl | Children]).
 
 -spec muc_leave(xcl:jid(), binary()) -> #xmlel{}.
 muc_leave(Room, Priority) ->
     Attrs = [{<<"to">>, xcl_jid:to_binary(Room)},
              {<<"type">>, <<"unavailable">>}],
-    el(<<"presence">>, Attrs, [el_simple(<<"priority">>, Priority)]).
+    xcl_xml:el(<<"presence">>, Attrs,
+               [xcl_xml:el_simple(<<"priority">>, Priority)]).
 
 -spec muc_disco_info(binary(), xcl:jid()) -> #xmlel{}.
 muc_disco_info(Id, Room) ->
     El = iq_get(Id, ?NS_DISCO_INFO, []),
-    set_attr(El, attr(<<"to">>, xcl_jid:bare_to_binary(Room))).
+    xcl_xml:set_attr(El, xcl_xml:attr(<<"to">>, xcl_jid:bare_to_binary(Room))).
 
 -spec muc_disco_items(binary(), xcl:jid()) -> #xmlel{}.
 muc_disco_items(Id, Room) ->
     El = iq_get(Id, ?NS_DISCO_ITEMS, []),
-    set_attr(El, attr(<<"to">>, xcl_jid:to_binary(Room))).
+    xcl_xml:set_attr(El, xcl_xml:attr(<<"to">>, xcl_jid:to_binary(Room))).
 
 -spec get_muc_count(#xmlel{}) -> binary() | undefined.
 get_muc_count(El) ->
@@ -489,30 +498,30 @@ stream_end() ->
 
 -spec ws_open(binary()) -> #xmlel{}.
 ws_open(Server) ->
-    el(<<"open">>, [{<<"xmlns">>, ?NS_FRAMING},
-                    {<<"to">>, Server},
-                    {<<"version">>,<<"1.0">>}], []).
+    xcl_xml:el(<<"open">>, [{<<"xmlns">>, ?NS_FRAMING},
+                            {<<"to">>, Server},
+                            {<<"version">>,<<"1.0">>}], []).
 
 -spec ws_close() -> #xmlel{}. 
 ws_close() ->
-    el(<<"close">>, [{<<"xmlns">>, ?NS_FRAMING}], []).
+    xcl_xml:el(<<"close">>, [{<<"xmlns">>, ?NS_FRAMING}], []).
 
 -spec starttls() -> #xmlel{}.
 starttls() ->
-    el(<<"starttls">>, [{<<"xmlns">>, ?NS_TLS}], []).
+    xcl_xml:el(<<"starttls">>, [{<<"xmlns">>, ?NS_TLS}], []).
 
 -spec compress(binary() | atom()) -> #xmlel{}.
 compress(Method) ->
     Method1 = to_binary(Method),
-    el(<<"compress">>,
-       [{<<"xmlns">>, ?NS_COMPRESS}],
-       [el_simple(<<"method">>, Method1)]).
+    xcl_xml:el(<<"compress">>,
+               [{<<"xmlns">>, ?NS_COMPRESS}],
+               [xcl_xml:el_simple(<<"method">>, Method1)]).
 
 -spec auth(binary(), [#xmlel{} | #xmlcdata{}]) -> #xmlel{}.
 auth(Mechanism, Body) ->
-    el(<<"auth">>,
-       [{<<"xmlns">>, ?NS_SASL}, {<<"mechanism">>, Mechanism}],
-       Body).
+    xcl_xml:el(<<"auth">>,
+               [{<<"xmlns">>, ?NS_SASL}, {<<"mechanism">>, Mechanism}],
+               Body).
 
 -spec auth_plain(binary(), binary()) -> #xmlel{}.
 auth_plain(Username, Password) ->
@@ -522,14 +531,14 @@ auth_plain(Username, Password) ->
 
 -spec bind(binary()) -> #xmlel{}.
 bind(Resource) ->
-    Bind = el(<<"bind">>,
-              [{<<"xmlns">>, ?NS_BIND}],
-              [el_simple(<<"resource">>, Resource)]),
+    Bind = xcl_xml:el(<<"bind">>,
+                      [{<<"xmlns">>, ?NS_BIND}],
+                      [xcl_xml:el_simple(<<"resource">>, Resource)]),
     iq(id(), <<"set">>, [Bind]).
 
 -spec session() -> #xmlel{}.
 session() ->
-    Session = el(<<"session">>, [{<<"xmlns">>, ?NS_SESSION}], []),
+    Session = xcl_xml:el(<<"session">>, [{<<"xmlns">>, ?NS_SESSION}], []),
     iq(id(), <<"set">>, [Session]).
 
 -spec get_stream_features(#xmlel{}) -> list().
@@ -604,6 +613,6 @@ add_el_simple([Key | Tail], PropList, Acc) ->
         undefined ->
             add_el_simple(Tail, PropList, Acc);
         Value ->
-            add_el_simple(Tail, PropList, [el_simple(Key, Value) | Acc])
+            add_el_simple(Tail, PropList, [xcl_xml:el_simple(Key, Value) | Acc])
     end.
 
