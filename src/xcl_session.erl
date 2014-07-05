@@ -13,6 +13,7 @@
 
 -export([start/1,
          stop/1,
+         kill/1,
          send_stanza/2,
          receive_stanza/1, receive_stanza/2,
          is_valid/1,
@@ -64,6 +65,11 @@ stop(#session{transport = Trans} = Session) ->
         false ->
             invalid_session 
     end.
+
+-spec kill(xcl:session()) -> ok | not_connected.
+kill(#session{transport = Trans} = Session) ->
+    xcl_log:debug("[xcl_session] Killing session"),
+    Trans:disconnect(Session).
 
 -spec send_stanza(xcl:session(), xmlstreamelement()) -> ok | {error, term()}.
 send_stanza(#session{transport = Trans} = Session, El) ->
