@@ -185,8 +185,9 @@ receive_data(Data, #state{parser = Parser,
     {noreply, #state{}} | {stop, normal, #state{}}.
 process_stanzas([], State) ->
     {noreply, State};
-process_stanzas([#xmlstreamend{} | _Tail], State) ->
+process_stanzas([#xmlstreamend{} = Stanza | _Tail], #state{client = Client} = State) ->
     xcl_log:debug("[xcl_socket] Received stream end, closing socket"),
+    Client ! {stanza, self(), Stanza},
     {stop, normal, State};
 process_stanzas([#xmlel{name = <<"stream:error">>} = Stanza | _Tail], State) ->
     stream_error(Stanza, State);
