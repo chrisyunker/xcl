@@ -15,6 +15,8 @@
 
 -export([connect/1,
          disconnect/1,
+         start_stream/1,
+         end_stream/1,
          send_stanza/2,
          enable_tls/1,
          reset_parser/1,
@@ -52,6 +54,19 @@ disconnect(#session{pid = Pid}) ->
         exit:{noproc, {gen_server, call, _}} ->
             not_connected
     end.
+
+-spec start_stream(xcl:session()) -> list().
+start_stream(#session{jid = Jid} = Session) ->
+    send_stanza(Session, xcl_stanza:stream_start(Jid#jid.domain, client)),
+    {ok, _StreamEl} = xcl_session:receive_stanza(Session, wait_for_stream_start),
+    {ok, FeaturesEl} = xcl_session:receive_stanza(Session, wait_for_features),
+    xcl_stanza:get_stream_features(FeaturesEl).
+
+-spec end_stream(xcl:session()) -> ok.
+end_stream(Session) ->
+    send_stanza(Session, xcl_stanza:stream_end()),
+    {ok, _StreamEl} = xcl_session:receive_stanza(Session, wait_for_stream_end),
+    ok.
 
 -spec send_stanza(xcl:session(), xmlstreamelement()) -> ok | {error, term()}.
 send_stanza(#session{socket = Socket, tls = true}, El) ->

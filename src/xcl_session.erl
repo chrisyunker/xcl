@@ -52,8 +52,7 @@ stop(#session{transport = Trans} = Session) ->
     case is_valid(Session) of
         true ->
             try
-                Trans:send_stanza(Session, xcl_stanza:stream_end()),
-                {ok, _StreamEl} = receive_stanza(Session, wait_for_stream_end),
+                Trans:end_stream(Session),
                 xcl_log:debug("[xcl_session] Server ended stream"),
                 ok
             catch
@@ -116,14 +115,10 @@ connect(Args) ->
     end.
 
 -spec start_stream(xcl:session()) -> list().
-start_stream(#session{transport = Trans, jid = Jid} = Session) ->
+start_stream(#session{transport = Trans} = Session) ->
     xcl_log:debug("[xcl_session] Starting stream"),
     try
-        Trans:send_stanza(Session,
-                          xcl_stanza:stream_start(Jid#jid.domain, client)),
-        {ok, _StreamEl} = receive_stanza(Session, wait_for_stream_start),
-        {ok, FeaturesEl} = receive_stanza(Session, wait_for_features),
-        Features = xcl_stanza:get_stream_features(FeaturesEl),
+        Features = Trans:start_stream(Session),
         xcl_log:debug("[xcl_session] Stream features: ~p", [Features]),
         Features
     catch
