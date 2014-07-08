@@ -1,6 +1,6 @@
 {application, xcl,
  [{description, "XMPP Client Library"},
-  {vsn, "1.1.0"},
+  {vsn, "1.1.1"},
   {registered, []},
   {applications, [kernel,
                   stdlib]},
