@@ -111,7 +111,14 @@ handle_call({connect, Args}, _From, State) ->
     Port = to_integer(proplists:get_value(port, Args)),
     Path = to_list(proplists:get_value(path, Args)),
     LegacyWS = proplists:get_value(legacy_ws, Args, false),
-    Opts = [],
+    SSL = case proplists:get_value(tls, Args, false) of
+        tls ->
+            ssl:start(),
+            true;
+        _ ->
+            false
+    end,
+    Opts = [{ssl, SSL}],
     xcl_log:debug("[xcl_ws] Connect websocket ~s:~p~s with options: ~p",
          [Host, Port, Path, Opts]),
     try

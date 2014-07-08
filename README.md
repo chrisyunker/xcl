@@ -22,7 +22,7 @@ Args = [{username, "username"},
         {resource, "xcl"},
         {host, "yunker.io"},
         {port, 5223},
-        {transport, socket},
+        {transport, socket | ws},
         {auth, plain},
         {tls, none | tls | starttls},
         {compress, none}]
