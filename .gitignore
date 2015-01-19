@@ -1,8 +1,9 @@
 .eunit
+.rebar
+rebar
 deps
 ebin
 log
-rebar
 *.o
 *.beam
 *.plt
