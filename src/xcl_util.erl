@@ -44,11 +44,13 @@ to_binary(Bin) when is_binary(Bin) ->
 to_binary(List) when is_list(List) ->
     list_to_binary(List).
 
--spec to_list(string() | binary()) -> string().
+-spec to_list(string() | binary() | integer()) -> string().
 to_list(List) when is_list(List) ->
     List;
 to_list(Bin) when is_binary(Bin) ->
-    binary_to_list(Bin).
+    binary_to_list(Bin);
+to_list(Int) when is_integer(Int) ->
+    integer_to_list(Int).
 
 -spec to_integer(integer() | binary() | string()) -> integer().
 to_integer(Int) when is_integer(Int) ->

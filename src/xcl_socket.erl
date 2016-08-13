@@ -81,7 +81,7 @@ start_stream(#session{jid = Jid} = Session) ->
 end_stream(Session) ->
     send_stanza(Session, xcl_stanza:stream_end()).
 
--spec send_stanza(xcl:session(), xmlstreamelement()) -> ok | {error, term()}.
+-spec send_stanza(xcl:session(), exml_stream:element()) -> ok | {error, term()}.
 send_stanza(#session{socket = Socket, tls = true}, El) ->
     ssl:send(Socket, exml:to_iolist(El));
 send_stanza(#session{socket = Socket}, El) ->
@@ -209,7 +209,7 @@ receive_data(Data, #state{parser = Parser,
     {ok, Parser1, Stanzas} = exml_stream:parse(Parser, Data),
     process_stanzas(Stanzas, State#state{parser = Parser1}).
 
--spec process_stanzas([xmlstreamelement()], #state{}) ->
+-spec process_stanzas([exml_stream:element()], #state{}) ->
     {noreply, #state{}} | {stop, normal, #state{}}.
 process_stanzas([], State) ->
     {noreply, State};
@@ -242,7 +242,7 @@ socket_error(Event, Reason, #state{module = Module, socket = Socket} = State) ->
     setopts(Module, Socket, [{active, once}]),
     {noreply, State}.
 
--spec stream_error(#xmlel{}, #state{}) -> {stop, normal, #state{}}.
+-spec stream_error(exml:element(), #state{}) -> {stop, normal, #state{}}.
 stream_error(Stanza, #state{client = Client} = State) ->
     xcl_log:warning("[xcl_socket] Received stream error, closing socket [~p]", [Stanza]),
     Client ! {stream_error, self(), Stanza},

@@ -12,7 +12,6 @@
 
 -type session() :: #session{}.
 -type jid() :: #jid{}.
--type xmlel() :: #xmlel{}.
--type stanza() :: xmlstreamelement().
+-type stanza() :: exml_stream:element().
 
--export_type([session/0, jid/0, xmlel/0, stanza/0]).
+-export_type([session/0, jid/0, stanza/0]).

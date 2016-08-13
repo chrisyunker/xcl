@@ -11,7 +11,7 @@
 -include("xcl.hrl").
 -include("xcl_config.hrl").
 
--behaviour(gen_server).
+-behaviour(websocket_client_handler).
 
 %% transport implementation
 -export([check_args/1,
@@ -24,18 +24,15 @@
          reset_parser/1,
          is_connected/1]).
 
-%% gen_server callbacks
--export([init/1,
-         handle_call/3,
-         handle_cast/2,
-         handle_info/2,
-         terminate/2,
-         code_change/3]).
+% websocket_client_handler callbacks
+-export([init/2,
+         websocket_handle/3,
+         websocket_info/3,
+         websocket_terminate/3]).
 
 -import(xcl_util, [to_list/1, to_integer/1]).
 
 -record(state, {client :: pid(),
-                ws :: pid(),
                 parser :: tuple(),
                 compress = none :: atom(),
                 legacy_ws = false :: boolean()}).
@@ -43,7 +40,6 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
-
 -spec check_args(list()) -> ok.
 check_args(Args) ->
     ReqArgs = [username,
@@ -62,55 +58,10 @@ check_args(Args) ->
 
 -spec connect(list()) -> {ok, xcl:session()} | {error, term()}.
 connect(Args) ->
-    {ok, Pid} = gen_server:start_link(?MODULE, [self()], []),
-    gen_server:call(Pid, {connect, Args}, ?XCL_TRANS_CONN_TIMEOUT).
-
--spec disconnect(xcl:session()) -> ok | not_connected.
-disconnect(#session{pid = Pid}) ->
-    try
-        gen_server:call(Pid, disconnect)
-    catch
-        exit:{noproc, {gen_server, call, _}} ->
-            not_connected
-    end.
-
--spec start_stream(xcl:session()) -> ok.
-start_stream(#session{pid = Pid, jid = Jid}) ->
-    gen_server:cast(Pid, {start_stream, Jid#jid.domain}).
-
--spec end_stream(xcl:session()) -> ok.
-end_stream(#session{pid = Pid}) ->
-    gen_server:cast(Pid, end_stream).
-
--spec send_stanza(xcl:session(), xmlstreamelement()) -> ok.
-send_stanza(#session{pid = Pid}, El) ->
-    gen_server:cast(Pid, {send, exml:to_iolist(El)}).
-
--spec enable_tls(xcl:session()) -> any().
-enable_tls(_Session) ->
-    throw({tls_not_supported}).
-
--spec reset_parser(xcl:session()) -> ok.
-reset_parser(#session{pid = Pid}) ->
-    gen_server:cast(Pid, reset_parser).
-
--spec is_connected(xcl:session()) -> boolean().
-is_connected(#session{pid = Pid}) ->
-    erlang:is_process_alive(Pid).
-
-
-%%%===================================================================
-%%% gen_server callbacks
-%%%===================================================================
-
-init([Client]) ->
-    {ok, #state{client = Client}}.
-
-handle_call({connect, Args}, _From, State) ->
+    LegacyWS = proplists:get_value(legacy_ws, Args, false),
     Host = to_list(proplists:get_value(host, Args)),
     Port = to_integer(proplists:get_value(port, Args)),
     Path = to_list(proplists:get_value(path, Args)),
-    LegacyWS = proplists:get_value(legacy_ws, Args, false),
     SSL = case proplists:get_value(tls, Args, false) of
         tls ->
             ssl:start(),
@@ -118,89 +69,111 @@ handle_call({connect, Args}, _From, State) ->
         _ ->
             false
     end,
-    Opts = [{ssl, SSL}],
-    xcl_log:debug("[xcl_ws] Connect websocket ~s:~p~s with options: ~p",
-         [Host, Port, Path, Opts]),
+    URL = url(SSL, Host, Port, Path),
+    xcl_log:debug("[xcl_ws] Connect websocket URL: ~p", [URL]),
     try
-        {ok, WS} = wsecli:start(Host, Port, Path, Opts),
-        Pid = self(),
-        wsecli:on_open(WS, fun() -> Pid ! opened end),
-        wsecli:on_error(WS, fun(Reason) -> Pid ! {error, Reason} end),
-        wsecli:on_message(WS, fun(Type, Data) -> Pid ! {Type, Data} end),
-        wsecli:on_close(WS, fun(_) -> Pid ! tcp_closed end),
-        wait_for_ws_open(),
-        Parser = create_parser(LegacyWS),
+        {ok, WS} = websocket_client:start_link(URL,
+                                               ?MODULE,
+                                               [self(), LegacyWS]),
         Session = #session{transport = ?MODULE,
-                           pid = Pid},
-        {reply, {ok, Session}, State#state{ws = WS,
-                                           parser = Parser,
-                                           legacy_ws = LegacyWS}}
+                           pid = WS},
+        {ok, Session}
     catch
         _:Reason ->
             xcl_log:error("Failed websocket connection: ~p", [Reason]),
-            {stop, normal, {error, Reason}, State}
-    end;
-handle_call(disconnect, _From, State) ->
-    {stop, normal, ok, State};
-handle_call(Event, _From, State) ->
-    xcl_log:warning("[xcl_ws] Unhandled call: ~p", [Event]),
-    {noreply, State}.
+            {error, Reason}
+    end.
 
-handle_cast({send, Data}, #state{ws = WS} = State) ->
-    send_data(WS, Data),
-    {noreply, State};
-handle_cast({start_stream, Domain}, #state{legacy_ws = LegacyWS,
-                                           ws = WS} = State) ->
-    case LegacyWS of
-        true  -> send_xml(WS, xcl_stanza:stream_start(Domain, client));
-        false -> send_xml(WS, xcl_stanza:ws_open(Domain))
-    end,
-    {noreply, State};
-handle_cast(end_stream, #state{legacy_ws = LegacyWS,
-                               ws = WS} = State) ->
-    case LegacyWS of
-        true  -> send_xml(WS, xcl_stanza:stream_end());
-        false -> send_xml(WS, xcl_stanza:ws_close())
-    end,
-    {noreply, State};
-handle_cast(reset_parser, #state{parser = Parser} = State) ->
-    {ok, Parser1} = exml_stream:reset_parser(Parser),
-    {noreply, State#state{parser = Parser1}};
-handle_cast(Event, State) ->
-    xcl_log:warning("[xcl_ws] Unhandled cast: ~p", [Event]),
-    {noreply, State}.
+-spec disconnect(xcl:session()) -> ok | not_connected.
+disconnect(#session{pid = Pid}) ->
+    try
+        websocket_client:cast(Pid, close)
+    catch
+        exit:{noproc, {gen_server, call, _}} ->
+            not_connected
+    end.
 
-handle_info({text, Data}, State) ->
-    handle_info({binary, list_to_binary(lists:flatten(Data))}, State);
-handle_info({binary, Data}, State) ->
-    handle_data(Data, State);
-handle_info({error, Reason}, State) ->
-    {stop, Reason, State};
-handle_info(Event, State) ->
-    xcl_log:warning("[xcl_ws] Unhandled event: ~p", [Event]),
-    {noreply, State}.
+-spec start_stream(xcl:session()) -> any().
+start_stream(#session{pid = Pid, jid = Jid}) ->
+    Pid ! {start_stream, Jid#jid.domain}.
 
-terminate(Reason, #state{ws = WS} = State) ->
-    xcl_log:debug("[xcl_ws] Terminate reason: ~p", [Reason]),
-    free_parser(State),
-    wsecli:stop(WS).
+-spec end_stream(xcl:session()) -> any().
+end_stream(#session{pid = Pid}) ->
+    Pid ! end_stream.
 
-code_change(_OldVsn, State, _Extra) ->
+-spec send_stanza(xcl:session(), exml_stream:element()) -> ok.
+send_stanza(#session{pid = Pid}, El) ->
+    websocket_client:cast(Pid, {text, exml:to_binary(El)}).
+
+-spec enable_tls(xcl:session()) -> any().
+enable_tls(_Session) ->
+    throw({tls_not_supported}).
+
+-spec reset_parser(xcl:session()) -> any().
+reset_parser(#session{pid = Pid}) ->
+    Pid ! reset_parser.
+
+-spec is_connected(xcl:session()) -> boolean().
+is_connected(#session{pid = Pid}) ->
+    erlang:is_process_alive(Pid).
+
+%%%===================================================================
+%%% websocket_client_handler callbacks
+%%%===================================================================
+-spec init(list(), websocket_req:req()) -> {ok, #state{}}.
+init([Pid, LegacyWS], _ConnState) ->
+    Parser = create_parser(LegacyWS),
+    {ok, #state{parser = Parser,
+                client = Pid}}.
+
+websocket_handle({binary, Data}, _ConnState, State) ->
+    handle_data(Data, State),
+    {ok, State};
+websocket_handle({text, Data}, _ConnState, State) ->
+    handle_data(list_to_binary(lists:flatten(Data)), State),
+    {ok, State};
+websocket_handle(Msg, _ConnState, State) ->
+    xcl_log:info("websocket_handle: unhandled message: ~p", [Msg]),
     {ok, State}.
 
+websocket_info({start_stream, Domain}, _ConnState, #state{legacy_ws = true} = State) ->
+    Stanza = xcl_stanza:stream_start(Domain, client),
+    websocket_client:cast(self(), {text, exml:to_binary(Stanza)}),
+    {noreply, State};
+websocket_info({start_stream, Domain}, _ConnState, #state{legacy_ws = false} = State) ->
+    Stanza = xcl_stanza:ws_open(Domain),
+    websocket_client:cast(self(), {text, exml:to_binary(Stanza)}),
+    {noreply, State};
+websocket_info(end_stream, _ConnState, #state{legacy_ws = true} = State) ->
+    Stanza = xcl_stanza:stream_end(),
+    websocket_client:cast(self(), {text, exml:to_binary(Stanza)}),
+    {noreply, State};
+websocket_info(end_stream, _ConnState, #state{legacy_ws = false} = State) ->
+    Stanza = xcl_stanza:ws_close(),
+    websocket_client:cast(self(), {text, exml:to_binary(Stanza)}),
+    {noreply, State};
+
+websocket_info(reset_parser, _ConnState, #state{parser = Parser} = State) ->
+    {ok, Parser1} = exml_stream:reset_parser(Parser),
+    {noreply, State#state{parser = Parser1}};
+websocket_info(stop, _ConnState, State) ->
+    {close, <<>>, State};
+websocket_info(Type, _ConnState, State) ->
+    xcl_log:info("websocket_info: unhandled type: ~p", [Type]),
+    {reply, <<>>, State}.
+
+websocket_terminate(Reason, _Req, State) ->
+    xcl_log:debug("[xcl_ws] Terminate reason: ~p", [Reason]),
+    free_parser(State),
+    case is_process_alive(State#state.client) of
+        true -> gen_server:cast(State#state.client, ws_closed);
+        false -> ok
+    end,
+    ok.
 
 %%%===================================================================
 %%% Private functions
 %%%===================================================================
-
--spec send_xml(pid(), xmlstreamelement()) -> ok.
-send_xml(WS, El) ->
-    wsecli:send(WS, exml:to_iolist(El)).
-
--spec send_data(pid(), iolist()) -> ok.
-send_data(WS, Data) ->
-    wsecli:send(WS, Data).
-
 -spec create_parser(boolean()) -> exml_stream:parser().
 create_parser(true) ->
     create_parser2([]);
@@ -210,22 +183,13 @@ create_parser2(Opts) ->
     {ok, Parser} = exml_stream:new_parser(Opts),
     Parser.
 
--spec wait_for_ws_open() -> ok.
-wait_for_ws_open() ->
-    receive
-        opened ->
-            ok
-    after ?XCL_WS_HANDSHAKE_TIMEOUT ->
-            throw(handshake_timeout)
-    end.
-
 -spec handle_data(binary(), #state{}) ->
     {noreply, #state{}} | {stop, normal, #state{}}.
 handle_data(Data, #state{parser = Parser} = State) ->
     {ok, Parser1, Stanzas} = exml_stream:parse(Parser, Data),
     process_stanzas(Stanzas, State#state{parser = Parser1}).
 
--spec process_stanzas([xmlstreamelement()], #state{}) ->
+-spec process_stanzas([exml_stream:element()], #state{}) ->
     {noreply, #state{}} | {stop, normal, #state{}}.
 process_stanzas([], State) ->
     {noreply, State};
@@ -245,9 +209,18 @@ free_parser(#state{parser = undefined}) ->
 free_parser(#state{parser = Parser}) ->
     exml_stream:free_parser(Parser).
 
--spec stream_error(#xmlel{}, #state{}) -> {stop, normal, #state{}}.
+-spec stream_error(exml:element(), #state{}) -> {stop, normal, #state{}}.
 stream_error(Stanza, #state{client = Client} = State) ->
     xcl_log:warning("[xcl_ws] Received stream error, closing websocket [~p]", [Stanza]),
     Client ! {stream_error, self(), Stanza},
     {stop, normal, State}.
+
+-spec url(boolean(), string(), integer(), string()) -> string().
+url(SSL, Host, Port, Path) ->
+    Scheme = case SSL of
+                 true -> "wss://";
+                 false -> "ws://"
+             end,
+    Scheme ++ Host ++ ":" ++ to_list(Port) ++ "/" ++ Path.
+
 

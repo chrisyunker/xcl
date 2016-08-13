@@ -71,15 +71,15 @@ kill(#session{transport = Trans} = Session) ->
     xcl_log:debug("[xcl_session] Killing session"),
     Trans:disconnect(Session).
 
--spec send_stanza(xcl:session(), xmlstreamelement()) -> ok | {error, term()}.
+-spec send_stanza(xcl:session(), exml_stream:element()) -> ok | {error, term()}.
 send_stanza(#session{transport = Trans} = Session, El) ->
     Trans:send_stanza(Session, El).
 
--spec receive_stanza(xcl:session()) -> {ok, xmlstreamelement()}.
+-spec receive_stanza(xcl:session()) -> {ok, exml_stream:element()}.
 receive_stanza(Session) ->
     receive_stanza(Session, undefined).
 
--spec receive_stanza(xcl:session(), atom()) -> {ok, xmlstreamelement()}.
+-spec receive_stanza(xcl:session(), atom()) -> {ok, exml_stream:element()}.
 receive_stanza(#session{pid = Pid}, Name) ->
     receive
         {stanza, Pid, Stanza} ->
