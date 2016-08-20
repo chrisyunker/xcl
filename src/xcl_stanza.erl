@@ -68,11 +68,13 @@
          auth_plain/2,
          bind/1,
          session/0,
+         session/1,
          get_stream_features/1,
          verify_starttls/1,
          verify_compress/1,
          verify_auth/1,
-         verify_bind/1]).
+         verify_bind/1,
+         verify_session/1]).
 
 -import(xcl_util, [to_binary/1,
                    id/0]).
@@ -541,6 +543,12 @@ session() ->
     Session = xcl_xml:el(<<"session">>, [{<<"xmlns">>, ?NS_SESSION}], []),
     iq(id(), <<"set">>, [Session]).
 
+-spec session(list()) -> exml:element().
+session(Params) ->
+    ParamEls = [xcl_xml:el_simple(K, to_binary(V)) || {K, V} <- Params],
+    Session = xcl_xml:el(<<"session">>, [{<<"xmlns">>, ?NS_SESSION}], ParamEls),
+    iq(id(), <<"set">>, [Session]).
+
 -spec get_stream_features(exml:element()) -> list().
 get_stream_features(#xmlel{name = <<"stream:features">>, children = SubEls}) ->
     lists:foldl(fun get_stream_feature/2, [], SubEls);
@@ -596,6 +604,15 @@ verify_bind(#xmlel{name = <<"iq">>} = El) ->
 verify_bind(_) ->
     false.
 
+-spec verify_session(exml:element()) -> {true, list()} | false.
+verify_session(#xmlel{name = <<"iq">>} = El) ->
+    <<"result">> = exml_query:attr(El, <<"type">>),
+    SessionEl = exml_query:subelement(El, <<"session">>),
+    ?NS_SESSION = exml_query:attr(SessionEl, <<"xmlns">>),
+    Params = get_el_simple(SessionEl#xmlel.children),
+    {true, Params};
+verify_session(_) ->
+    false.
 
 %%%===================================================================
 %%% Private functions
@@ -616,3 +633,16 @@ add_el_simple([Key | Tail], PropList, Acc) ->
             add_el_simple(Tail, PropList, [xcl_xml:el_simple(Key, Value) | Acc])
     end.
 
+-spec get_el_simple([exml:element()]) -> list().
+get_el_simple(Els) ->
+    get_el_simple(Els, []).
+
+get_el_simple([], Acc) ->
+    Acc;
+get_el_simple([El | Tail], Acc) ->
+    case exml_query:cdata(El) of
+        <<>> ->
+            get_el_simple(Tail, Acc);
+        Value ->
+            get_el_simple(Tail, [{El#xmlel.name, Value} | Acc])
+    end.

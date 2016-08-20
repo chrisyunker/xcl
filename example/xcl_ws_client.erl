@@ -85,7 +85,7 @@ connect(Username, Password) ->
             {tls, none},
             {compress, none}],
     case xcl_session:start(Args) of
-        {ok, Session} ->
+        {ok, Session, _} ->
             {ok, Session};
         {error, Error} ->
             xcl_log:error("Failed to start session: ~p", [Error]),

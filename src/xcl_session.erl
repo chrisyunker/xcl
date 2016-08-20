@@ -25,7 +25,7 @@
 %%% Public API
 %%%===================================================================
 
--spec start(list()) -> {ok, xcl:session()} | {error, term()}.
+-spec start(list()) -> {ok, xcl:session(), list()} | {error, term()}.
 start(Args) ->
     xcl_log:debug("[xcl_session] Starting session"),
     case connect(Args) of
@@ -36,8 +36,8 @@ start(Args) ->
                 Session2 = negotiate_compression(Session1, Args, Features),
                 Session3 = authenticate(Session2, Args),
                 Session4 = bind(Session3, Args),
-                session(Session4),
-                {ok, Session4}
+                {ok, ServerParams} = session(Session4, Args),
+                {ok, Session4, ServerParams}
             catch
                 throw:{session_error, Error} ->
                     stop(Session),
@@ -166,13 +166,15 @@ bind(#session{transport = Trans} = Session, Args) ->
             throw({session_error, {bind_error, Reason}})
     end.
 
--spec session(xcl:session()) -> ok.
-session(#session{transport = Trans} = Session) ->
+-spec session(xcl:session(), list()) -> {ok, list()}.
+session(#session{transport = Trans} = Session, Args) ->
     try
-        Trans:send_stanza(Session, xcl_stanza:session()),
-        {ok, _SessionEl} = receive_stanza(Session, wait_for_session),
+        SessionParams = proplists:get_value(session_params, Args, []),
+        Trans:send_stanza(Session, xcl_stanza:session(SessionParams)),
+        {ok, SessionEl} = receive_stanza(Session, wait_for_session),
+        {true, ServerParams} = xcl_stanza:verify_session(SessionEl),
         xcl_log:debug("[xcl_session] Session established"),
-        ok
+        {ok, ServerParams}
     catch
         _:Reason ->
             throw({session_error, {session_error, Reason}})
