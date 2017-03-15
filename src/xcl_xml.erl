@@ -50,7 +50,8 @@ attr(Name, Value) ->
 el(Name) ->
     #xmlel{name = to_binary(Name)}.
 
--spec el(binary() | string(), [exml:attr()], [exml:element() | exml:cdata()]) -> exml:element().
+-spec el(binary() | string(), [exml:attr()],
+         [exml:element() | exml:cdata()]) -> exml:element().
 el(Name, Attrs, Children) ->
     #xmlel{name = to_binary(Name),
            attrs = Attrs,
@@ -126,7 +127,8 @@ has_subelement(El, Name) ->
     get_subelement(El, Name) /= undefined.
 
 -spec replace_subelement(exml:element(), exml:element()) -> exml:element().
-replace_subelement(#xmlel{children = Children} = El, #xmlel{name = Name} = SubEl) ->
+replace_subelement(#xmlel{children = Children} = El,
+                   #xmlel{name = Name} = SubEl) ->
     El#xmlel{children = lists:keyreplace(Name, 1, Children, SubEl)}.
 
 -spec get_children(exml:element()) -> [exml:element()].
@@ -137,13 +139,15 @@ get_children(#xmlel{children = Children}) ->
 set_children(El, Children) ->
     El#xmlel{children = Children}.
 
--spec add_children(exml:element(), exml:element() | [exml:element()]) -> exml:element().
+-spec add_children(exml:element(), exml:element() | [exml:element()]) ->
+    exml:element().
 add_children(El, SubEls) when is_list(SubEls) ->
     El#xmlel{children = SubEls ++ El#xmlel.children};
 add_children(El, SubEl) ->
     add_children(El, [SubEl]).
 
--spec replace_child(exml:element(), exml:element(), exml:element()) -> exml:element().
+-spec replace_child(exml:element(), exml:element(), exml:element()) ->
+    exml:element().
 replace_child(#xmlel{children = Children} = El, OldChild, NewChild) ->
     Children2 = lists:foldl(
             fun(C, Acc) when C =:= OldChild ->

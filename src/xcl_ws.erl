@@ -37,6 +37,8 @@
                 compress = none :: atom(),
                 legacy_ws = false :: boolean()}).
 
+-type state() :: #state {}.
+
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -120,7 +122,7 @@ is_connected(#session{pid = Pid}) ->
 %%%===================================================================
 %%% websocket_client_handler callbacks
 %%%===================================================================
--spec init(list(), websocket_req:req()) -> {ok, #state{}}.
+-spec init(list(), websocket_req:req()) -> {ok, state()}.
 init([Pid, LegacyWS], _ConnState) ->
     Parser = create_parser(LegacyWS),
     {ok, #state{parser = Parser,
@@ -136,11 +138,13 @@ websocket_handle(Msg, _ConnState, State) ->
     xcl_log:info("websocket_handle: unhandled message: ~p", [Msg]),
     {ok, State}.
 
-websocket_info({start_stream, Domain}, _ConnState, #state{legacy_ws = true} = State) ->
+websocket_info({start_stream, Domain}, _ConnState,
+               #state{legacy_ws = true} = State) ->
     Stanza = xcl_stanza:stream_start(Domain, client),
     websocket_client:cast(self(), {text, exml:to_binary(Stanza)}),
     {noreply, State};
-websocket_info({start_stream, Domain}, _ConnState, #state{legacy_ws = false} = State) ->
+websocket_info({start_stream, Domain}, _ConnState,
+               #state{legacy_ws = false} = State) ->
     Stanza = xcl_stanza:ws_open(Domain),
     websocket_client:cast(self(), {text, exml:to_binary(Stanza)}),
     {noreply, State};
@@ -183,17 +187,18 @@ create_parser2(Opts) ->
     {ok, Parser} = exml_stream:new_parser(Opts),
     Parser.
 
--spec handle_data(binary(), #state{}) ->
-    {noreply, #state{}} | {stop, normal, #state{}}.
+-spec handle_data(binary(), state()) ->
+    {noreply, state()} | {stop, normal, state()}.
 handle_data(Data, #state{parser = Parser} = State) ->
     {ok, Parser1, Stanzas} = exml_stream:parse(Parser, Data),
     process_stanzas(Stanzas, State#state{parser = Parser1}).
 
--spec process_stanzas([exml_stream:element()], #state{}) ->
-    {noreply, #state{}} | {stop, normal, #state{}}.
+-spec process_stanzas([exml_stream:element()], state()) ->
+    {noreply, state()} | {stop, normal, state()}.
 process_stanzas([], State) ->
     {noreply, State};
-process_stanzas([#xmlstreamend{} = Stanza | _Tail], #state{client = Client} = State) ->
+process_stanzas([#xmlstreamend{} = Stanza | _Tail],
+                #state{client = Client} = State) ->
     xcl_log:debug("[xcl_ws] Received stream end, closing websocket"),
     Client ! {stanza, self(), Stanza},
     {stop, normal, State};
@@ -203,15 +208,16 @@ process_stanzas([Stanza | Tail], #state{client = Client} = State) ->
     Client ! {stanza, self(), Stanza},
     process_stanzas(Tail, State).
 
--spec free_parser(#state{}) -> any().
+-spec free_parser(state()) -> any().
 free_parser(#state{parser = undefined}) ->
     ok;
 free_parser(#state{parser = Parser}) ->
     exml_stream:free_parser(Parser).
 
--spec stream_error(exml:element(), #state{}) -> {stop, normal, #state{}}.
+-spec stream_error(exml:element(), state()) -> {stop, normal, state()}.
 stream_error(Stanza, #state{client = Client} = State) ->
-    xcl_log:warning("[xcl_ws] Received stream error, closing websocket [~p]", [Stanza]),
+    xcl_log:warning("[xcl_ws] Received stream error, closing websocket [~p]",
+                    [Stanza]),
     Client ! {stream_error, self(), Stanza},
     {stop, normal, State}.
 

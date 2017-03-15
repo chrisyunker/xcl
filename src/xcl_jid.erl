@@ -27,7 +27,8 @@ make(Node, Domain) ->
     #jid{node = xcl_util:to_binary(Node),
          domain = xcl_util:to_binary(Domain)}.
 
--spec make(binary() | string(), binary() | string(), binary() | string()) -> xcl:jid().
+-spec make(binary() | string(), binary() | string(), binary() | string()) ->
+    xcl:jid().
 make(Node, Domain, Resource) ->
     #jid{node = xcl_util:to_binary(Node),
          domain = xcl_util:to_binary(Domain),
@@ -66,7 +67,8 @@ from_binary(Jid) ->
                  domain = Domain};
         {SlashPos, _} ->
             Domain = binary:part(Jid, {AtPos + 1, SlashPos - AtPos - 1}),
-            Resource = binary:part(Jid, {SlashPos + 1, size(Jid) - SlashPos - 1}),
+            Resource = binary:part(Jid,
+                                   {SlashPos + 1, size(Jid) - SlashPos - 1}),
             #jid{node = Node,
                  domain = Domain,
                  resource = Resource}

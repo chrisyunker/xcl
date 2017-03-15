@@ -40,6 +40,8 @@
                 parser :: tuple(),
                 compress = none :: atom()}).
 
+-type state() :: #state{}.
+
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -120,7 +122,8 @@ handle_call({connect, Args}, _From, State) ->
     end,
     xcl_log:debug("[xcl_socket] Connect socket ~s:~p with options: ~p",
          [Host, Port, Opts]),
-    case connect_sock(Module, Host, Port, Opts, ?XCL_SOCK_CONN_TIMEOUT, LocalIps) of
+    case connect_sock(Module, Host, Port, Opts,
+                      ?XCL_SOCK_CONN_TIMEOUT, LocalIps) of
         {ok, Socket} ->
             {ok, Parser} = exml_stream:new_parser(),
             Session = #session{transport = ?MODULE,
@@ -136,7 +139,8 @@ handle_call({connect, Args}, _From, State) ->
     end;
 handle_call({enable_tls, Session}, _From, #state{socket = Socket} = State) ->
     ssl:start(),
-    xcl_log:debug("[xcl_socket] Enabling TLS with options: ~p", [?XCL_TLS_OPTS]),
+    xcl_log:debug("[xcl_socket] Enabling TLS with options: ~p",
+                  [?XCL_TLS_OPTS]),
     {ok, Socket1} = ssl:connect(Socket, ?XCL_TLS_OPTS),
     {ok, Parser} = exml_stream:new_parser(),
     Session1 = Session#session{socket = Socket1,
@@ -200,8 +204,8 @@ connect_sock(Module, Host, Port, Opts, Timeout, [Ip | Tail]) ->
             Result
     end.
 
--spec receive_data(binary(), #state{}) ->
-    {noreply, #state{}} | {stop, normal, #state{}}.
+-spec receive_data(binary(), state()) ->
+    {noreply, state()} | {stop, normal, state()}.
 receive_data(Data, #state{parser = Parser,
                           module = Module,
                           socket = Socket} = State) ->
@@ -209,11 +213,12 @@ receive_data(Data, #state{parser = Parser,
     {ok, Parser1, Stanzas} = exml_stream:parse(Parser, Data),
     process_stanzas(Stanzas, State#state{parser = Parser1}).
 
--spec process_stanzas([exml_stream:element()], #state{}) ->
-    {noreply, #state{}} | {stop, normal, #state{}}.
+-spec process_stanzas([exml_stream:element()], state()) ->
+    {noreply, state()} | {stop, normal, state()}.
 process_stanzas([], State) ->
     {noreply, State};
-process_stanzas([#xmlstreamend{} = Stanza | _Tail], #state{client = Client} = State) ->
+process_stanzas([#xmlstreamend{} = Stanza | _Tail],
+                #state{client = Client} = State) ->
     xcl_log:debug("[xcl_socket] Received stream end, closing socket"),
     Client ! {stanza, self(), Stanza},
     {stop, normal, State};
@@ -223,32 +228,33 @@ process_stanzas([Stanza | Tail], #state{client = Client} = State) ->
     Client ! {stanza, self(), Stanza},
     process_stanzas(Tail, State).
 
--spec free_socket(#state{}) -> any().
+-spec free_socket(state()) -> any().
 free_socket(#state{socket = undefined}) ->
     ok;
 free_socket(#state{socket = Socket, module = Module}) ->
     Module:close(Socket).
 
--spec free_parser(#state{}) -> any().
+-spec free_parser(state()) -> any().
 free_parser(#state{parser = undefined}) ->
     ok;
 free_parser(#state{parser = Parser}) ->
     exml_stream:free_parser(Parser).
 
--spec socket_error(atom(), atom(), #state{}) -> {noreply, #state{}}.
+-spec socket_error(atom(), atom(), state()) -> {noreply, state()}.
 socket_error(Event, Reason, #state{module = Module, socket = Socket} = State) ->
     xcl_log:warning("[xcl_socket] Received socket error: ~p, reason: ~p",
          [Event, Reason]),
     setopts(Module, Socket, [{active, once}]),
     {noreply, State}.
 
--spec stream_error(exml:element(), #state{}) -> {stop, normal, #state{}}.
+-spec stream_error(exml:element(), state()) -> {stop, normal, state()}.
 stream_error(Stanza, #state{client = Client} = State) ->
-    xcl_log:warning("[xcl_socket] Received stream error, closing socket [~p]", [Stanza]),
+    xcl_log:warning("[xcl_socket] Received stream error, closing socket [~p]",
+                    [Stanza]),
     Client ! {stream_error, self(), Stanza},
     {stop, normal, State}.
 
--spec socket_closed(atom(), #state{}) -> {stop, normal, #state{}}.
+-spec socket_closed(atom(), state()) -> {stop, normal, state()}.
 socket_closed(Event, #state{client = Client} = State) ->
     xcl_log:debug("[xcl_socket] Received socket closed: ~p", [Event]),
     Client ! {Event, self()},

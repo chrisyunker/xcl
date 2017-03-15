@@ -80,7 +80,7 @@ process_if({_, If}, Acc) ->
         (lists:member(up, Flags) andalso
          lists:member(running, Flags)) of
         true ->
-            case extract_addr(If) of 
+            case extract_addr(If) of
                 false -> Acc;
                 Addr -> [Addr | Acc]
             end;
@@ -90,7 +90,8 @@ process_if({_, If}, Acc) ->
 process_if(_, Acc) ->
     Acc.
 
--spec extract_addr(list()) -> {integer(), integer(), integer(), integer()} | false.
+-spec extract_addr(list()) ->
+    {integer(), integer(), integer(), integer()} | false.
 extract_addr([]) ->
     false;
 extract_addr([{addr, {A, B, C, D}} | _]) ->

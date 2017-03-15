@@ -63,7 +63,7 @@ stop(#session{transport = Trans} = Session) ->
                     {error, {disconnect_error, Reason}}
             end;
         false ->
-            invalid_session 
+            invalid_session
     end.
 
 -spec kill(xcl:session()) -> ok | not_connected.
@@ -159,7 +159,8 @@ bind(#session{transport = Trans} = Session, Args) ->
             {true, BindJid} -> BindJid;
             false -> throw({fail_bind, BindEl})
         end,
-        xcl_log:debug("[xcl_session] Binded to jid: ~s", [xcl_jid:to_binary(Jid)]),
+        xcl_log:debug("[xcl_session] Binded to jid: ~s",
+                      [xcl_jid:to_binary(Jid)]),
         Session#session{jid = Jid}
     catch
         _:Reason ->

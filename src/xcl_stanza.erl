@@ -90,7 +90,8 @@
 el_xmlns(Xmlns) ->
     xcl_xml:el(<<"x">>, [xcl_xml:attr(<<"xmlns">>, Xmlns)], []).
 
--spec el_xmlns(binary() | string(), [exml:element() | exml:cdata()]) -> exml:element().
+-spec el_xmlns(binary() | string(), [exml:element() | exml:cdata()]) ->
+    exml:element().
 el_xmlns(Xmlns, Children) ->
     xcl_xml:el(<<"x">>, [xcl_xml:attr(<<"xmlns">>, Xmlns)], Children).
 
@@ -127,7 +128,8 @@ get_xmlns(El) ->
             exml_query:attr(XEl, <<"xmlns">>, undefined)
     end.
 
--spec get_error(exml:element()) -> {binary(), binary(), [exml:element()]} | undefined.
+-spec get_error(exml:element()) ->
+    {binary(), binary(), [exml:element()]} | undefined.
 get_error(El) ->
     case exml_query:subelement(El, <<"error">>, undefined) of
         undefined ->
@@ -182,7 +184,8 @@ presence(PropList) ->
 presence_roster(To, Type, Priority) ->
     Attrs = [{<<"to">>, xcl_jid:bare_to_binary(To)},
              {<<"type">>, to_binary(Type)}],
-    xcl_xml:el(<<"presence">>, Attrs, [xcl_xml:el_simple(<<"priority">>, Priority)]).
+    xcl_xml:el(<<"presence">>, Attrs,
+               [xcl_xml:el_simple(<<"priority">>, Priority)]).
 
 -spec get_presence_type(exml:element()) -> binary() | undefined.
 get_presence_type(#xmlel{name = <<"presence">>} = El) ->
@@ -248,11 +251,13 @@ get_message_subject(El) ->
 roster_req_list(Id) ->
     iq_get(Id, ?NS_ROSTER, []).
 
--spec roster_set_item(binary(), {xcl:jid(), binary(), [binary()]}) -> exml:element().
+-spec roster_set_item(binary(), {xcl:jid(), binary(), [binary()]}) ->
+    exml:element().
 roster_set_item(Id, Item) ->
     roster_set_items(Id, [Item]).
 
--spec roster_set_items(binary(), [{xcl:jid(), binary(), [binary()]}]) -> exml:element().
+-spec roster_set_items(binary(), [{xcl:jid(), binary(), [binary()]}]) ->
+    exml:element().
 roster_set_items(Id, Items) ->
     iq_set(Id, ?NS_ROSTER, lists:map(fun roster_set_item/1, Items)).
 
@@ -278,13 +283,15 @@ roster_remove_item(Jid) ->
              {<<"subscription">>, <<"remove">>}],
     xcl_xml:el(<<"item">>, Attrs, []).
 
--spec get_roster_list(exml:element()) -> [{binary(), xcl:jid(), binary(), list()}].
+-spec get_roster_list(exml:element()) ->
+    [{binary(), xcl:jid(), binary(), list()}].
 get_roster_list(El) ->
     Items = exml_query:paths(El, [{element, <<"query">>},
                                   {element, <<"item">>}]),
     lists:foldl(fun get_roster_item/2, [], Items).
 
--spec get_roster_item(exml:element(), [{xcl:jid(), binary(), binary(), [binary()]}]) ->
+-spec get_roster_item(exml:element(),
+                      [{xcl:jid(), binary(), binary(), [binary()]}]) ->
     [{xcl:jid(), binary(), binary(), [binary()]}].
 get_roster_item(#xmlel{name = <<"item">>} = El, Acc) ->
     Jid = exml_query:attr(El, <<"jid">>, undefined),
@@ -308,7 +315,8 @@ privacy_req_list_names(Id) ->
 
 -spec privacy_req_lists(binary(), [binary()]) -> exml:element().
 privacy_req_lists(Id, Lists) ->
-    ListEls = [xcl_xml:el(<<"list">>, [{<<"name">>, List}], []) || List <- Lists],
+    ListEls = [xcl_xml:el(<<"list">>,
+                          [{<<"name">>, List}], []) || List <- Lists],
     iq_get(Id, ?NS_PRIVACY, ListEls).
 
 -spec privacy_set_list(binary(), binary(), list()) -> exml:element().
@@ -317,7 +325,8 @@ privacy_set_list(Id, Name, Items) ->
     AddEl = xcl_xml:el(<<"list">>, [{<<"name">>, Name}], ItemEls),
     iq_set(Id, ?NS_PRIVACY, [AddEl]).
 
--spec privacy_tuple_to_el({binary(), binary(), binary(), binary()}) -> exml:element().
+-spec privacy_tuple_to_el({binary(), binary(), binary(), binary()}) ->
+    exml:element().
 privacy_tuple_to_el({Action, Type, Value, Order}) ->
     xcl_xml:el(<<"item">>, [{<<"action">>, Action},
                             {<<"order">>, Order},
@@ -359,7 +368,8 @@ get_privacy_list_names(El) ->
             lists:foldl(fun get_privacy_list_name/2, [], Lists)
     end.
 
--spec get_privacy_list_name(exml:element(), [{binary(), binary()}]) -> {binary(), binary()}.
+-spec get_privacy_list_name(exml:element(), [{binary(), binary()}]) ->
+    {binary(), binary()}.
 get_privacy_list_name(#xmlel{name = Type} = El, Acc) ->
     case exml_query:attr(El, <<"name">>, undefined) of
         undefined ->
@@ -381,7 +391,8 @@ get_privacy_list(El) ->
             {Name, lists:map(fun privacy_el_to_tuple/1, Items)}
     end.
 
--spec privacy_el_to_tuple(exml:element()) -> {binary(), binary(), binary(), binary()}.
+-spec privacy_el_to_tuple(exml:element()) ->
+    {binary(), binary(), binary(), binary()}.
 privacy_el_to_tuple(#xmlel{name = <<"item">>} = El) ->
     Action = exml_query:attr(El, <<"action">>, undefined),
     Type = exml_query:attr(El, <<"type">>, undefined),
@@ -502,9 +513,9 @@ stream_end() ->
 ws_open(Server) ->
     xcl_xml:el(<<"open">>, [{<<"xmlns">>, ?NS_FRAMING},
                             {<<"to">>, Server},
-                            {<<"version">>,<<"1.0">>}], []).
+                            {<<"version">>, <<"1.0">>}], []).
 
--spec ws_close() -> exml:element(). 
+-spec ws_close() -> exml:element().
 ws_close() ->
     xcl_xml:el(<<"close">>, [{<<"xmlns">>, ?NS_FRAMING}], []).
 
@@ -527,7 +538,7 @@ auth(Mechanism, Body) ->
 
 -spec auth_plain(binary(), binary()) -> exml:element().
 auth_plain(Username, Password) ->
-    Credentials = <<0:8,Username/binary, 0:8,Password/binary>>,
+    Credentials = <<0:8, Username/binary, 0:8, Password/binary>>,
     auth(<<"PLAIN">>,
          [exml:escape_cdata(base64:encode(Credentials))]).
 
