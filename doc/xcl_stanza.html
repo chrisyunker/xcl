@@ -1,0 +1,395 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Module xcl_stanza</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" title="EDoc">
+</head>
+<body bgcolor="white">
+<div class="navbar"><a name="#navbar_top"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<hr>
+
+<h1>Module xcl_stanza</h1>
+<ul class="index"><li><a href="#description">Description</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>Create and extract XMPP stanzas.
+<p>Copyright © (C) 2014, Chris Yunker</p>
+
+<p><b>Authors:</b> Chris Yunker (<a href="mailto:chris@yunker.io"><tt>chris@yunker.io</tt></a>).</p>
+
+<h2><a name="description">Description</a></h2>Create and extract XMPP stanzas
+  
+<h2><a name="index">Function Index</a></h2>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#auth-2">auth/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#auth_plain-2">auth_plain/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#bind-1">bind/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#compress-1">compress/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#el_xmlns-1">el_xmlns/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#el_xmlns-2">el_xmlns/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_error-1">get_error/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_id-1">get_id/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_iq_result-1">get_iq_result/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_message_body-1">get_message_body/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_message_subject-1">get_message_subject/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_message_type-1">get_message_type/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_muc_count-1">get_muc_count/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_muc_status_codes-1">get_muc_status_codes/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_presence_show-1">get_presence_show/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_presence_status-1">get_presence_status/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_presence_type-1">get_presence_type/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_privacy_list-1">get_privacy_list/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_privacy_list_names-1">get_privacy_list_names/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_recipient-1">get_recipient/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_roster_list-1">get_roster_list/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_sender-1">get_sender/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_stream_features-1">get_stream_features/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_type-1">get_type/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_xmlns-1">get_xmlns/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#iq-3">iq/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#iq_get-3">iq_get/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#iq_set-3">iq_set/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#message-4">message/4</a></td><td></td></tr>
+<tr><td valign="top"><a href="#muc_disco_info-2">muc_disco_info/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#muc_disco_items-2">muc_disco_items/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#muc_join-2">muc_join/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#muc_leave-2">muc_leave/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#presence-1">presence/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#presence_roster-3">presence_roster/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#privacy_req_list_names-1">privacy_req_list_names/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#privacy_req_lists-2">privacy_req_lists/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#privacy_set_active-2">privacy_set_active/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#privacy_set_default-2">privacy_set_default/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#privacy_set_list-3">privacy_set_list/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#privacy_unset_active-1">privacy_unset_active/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#privacy_unset_default-1">privacy_unset_default/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#roster_remove_item-2">roster_remove_item/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#roster_remove_items-2">roster_remove_items/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#roster_req_list-1">roster_req_list/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#roster_set_item-2">roster_set_item/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#roster_set_items-2">roster_set_items/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#session-0">session/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#session-1">session/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#set_recipient-2">set_recipient/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#set_sender-2">set_sender/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#starttls-0">starttls/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#stream_end-0">stream_end/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#stream_start-2">stream_start/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#verify_auth-1">verify_auth/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#verify_bind-1">verify_bind/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#verify_compress-1">verify_compress/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#verify_session-1">verify_session/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#verify_starttls-1">verify_starttls/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#ws_close-0">ws_close/0</a></td><td></td></tr>
+<tr><td valign="top"><a href="#ws_open-1">ws_open/1</a></td><td></td></tr>
+</table>
+
+<h2><a name="functions">Function Details</a></h2>
+
+<h3 class="function"><a name="auth-2">auth/2</a></h3>
+<div class="spec">
+<p><tt>auth(Mechanism::binary(), Body::[<a href="exml.html#type-element">exml:element()</a> | <a href="exml.html#type-cdata">exml:cdata()</a>]) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="auth_plain-2">auth_plain/2</a></h3>
+<div class="spec">
+<p><tt>auth_plain(Username::binary(), Password::binary()) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="bind-1">bind/1</a></h3>
+<div class="spec">
+<p><tt>bind(Resource::binary()) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="compress-1">compress/1</a></h3>
+<div class="spec">
+<p><tt>compress(Method::binary() | atom()) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="el_xmlns-1">el_xmlns/1</a></h3>
+<div class="spec">
+<p><tt>el_xmlns(Xmlns::binary() | string()) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="el_xmlns-2">el_xmlns/2</a></h3>
+<div class="spec">
+<p><tt>el_xmlns(Xmlns::binary() | string(), Children::[<a href="exml.html#type-element">exml:element()</a> | <a href="exml.html#type-cdata">exml:cdata()</a>]) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="get_error-1">get_error/1</a></h3>
+<div class="spec">
+<p><tt>get_error(El::<a href="exml.html#type-element">exml:element()</a>) -&gt; {binary(), binary(), [<a href="exml.html#type-element">exml:element()</a>]} | undefined</tt><br></p>
+</div>
+
+<h3 class="function"><a name="get_id-1">get_id/1</a></h3>
+<div class="spec">
+<p><tt>get_id(El::<a href="exml.html#type-element">exml:element()</a>) -&gt; binary() | undefined</tt><br></p>
+</div>
+
+<h3 class="function"><a name="get_iq_result-1">get_iq_result/1</a></h3>
+<div class="spec">
+<p><tt>get_iq_result(Xmlel::<a href="exml.html#type-element">exml:element()</a>) -&gt; <a href="exml.html#type-element">exml:element()</a> | undefined</tt><br></p>
+</div>
+
+<h3 class="function"><a name="get_message_body-1">get_message_body/1</a></h3>
+<div class="spec">
+<p><tt>get_message_body(El::<a href="exml.html#type-element">exml:element()</a>) -&gt; binary() | undefined</tt><br></p>
+</div>
+
+<h3 class="function"><a name="get_message_subject-1">get_message_subject/1</a></h3>
+<div class="spec">
+<p><tt>get_message_subject(El::<a href="exml.html#type-element">exml:element()</a>) -&gt; binary() | undefined</tt><br></p>
+</div>
+
+<h3 class="function"><a name="get_message_type-1">get_message_type/1</a></h3>
+<div class="spec">
+<p><tt>get_message_type(Xmlel::<a href="exml.html#type-element">exml:element()</a>) -&gt; binary() | undefined</tt><br></p>
+</div>
+
+<h3 class="function"><a name="get_muc_count-1">get_muc_count/1</a></h3>
+<div class="spec">
+<p><tt>get_muc_count(El::<a href="exml.html#type-element">exml:element()</a>) -&gt; binary() | undefined</tt><br></p>
+</div>
+
+<h3 class="function"><a name="get_muc_status_codes-1">get_muc_status_codes/1</a></h3>
+<div class="spec">
+<p><tt>get_muc_status_codes(El::<a href="exml.html#type-element">exml:element()</a>) -&gt; [binary()]</tt><br></p>
+</div>
+
+<h3 class="function"><a name="get_presence_show-1">get_presence_show/1</a></h3>
+<div class="spec">
+<p><tt>get_presence_show(Xmlel::<a href="exml.html#type-element">exml:element()</a>) -&gt; binary() | undefined</tt><br></p>
+</div>
+
+<h3 class="function"><a name="get_presence_status-1">get_presence_status/1</a></h3>
+<div class="spec">
+<p><tt>get_presence_status(Xmlel::<a href="exml.html#type-element">exml:element()</a>) -&gt; binary() | undefined</tt><br></p>
+</div>
+
+<h3 class="function"><a name="get_presence_type-1">get_presence_type/1</a></h3>
+<div class="spec">
+<p><tt>get_presence_type(Xmlel::<a href="exml.html#type-element">exml:element()</a>) -&gt; binary() | undefined</tt><br></p>
+</div>
+
+<h3 class="function"><a name="get_privacy_list-1">get_privacy_list/1</a></h3>
+<div class="spec">
+<p><tt>get_privacy_list(El::<a href="exml.html#type-element">exml:element()</a>) -&gt; undefined | {binary(), list()}</tt><br></p>
+</div>
+
+<h3 class="function"><a name="get_privacy_list_names-1">get_privacy_list_names/1</a></h3>
+<div class="spec">
+<p><tt>get_privacy_list_names(El::<a href="exml.html#type-element">exml:element()</a>) -&gt; [{binary(), binary()}]</tt><br></p>
+</div>
+
+<h3 class="function"><a name="get_recipient-1">get_recipient/1</a></h3>
+<div class="spec">
+<p><tt>get_recipient(El::<a href="exml.html#type-element">exml:element()</a>) -&gt; binary() | undefined</tt><br></p>
+</div>
+
+<h3 class="function"><a name="get_roster_list-1">get_roster_list/1</a></h3>
+<div class="spec">
+<p><tt>get_roster_list(El::<a href="exml.html#type-element">exml:element()</a>) -&gt; [{binary(), <a href="xcl.html#type-jid">xcl:jid()</a>, binary(), list()}]</tt><br></p>
+</div>
+
+<h3 class="function"><a name="get_sender-1">get_sender/1</a></h3>
+<div class="spec">
+<p><tt>get_sender(El::<a href="exml.html#type-element">exml:element()</a>) -&gt; binary() | undefined</tt><br></p>
+</div>
+
+<h3 class="function"><a name="get_stream_features-1">get_stream_features/1</a></h3>
+<div class="spec">
+<p><tt>get_stream_features(Xmlel::<a href="exml.html#type-element">exml:element()</a>) -&gt; list()</tt><br></p>
+</div>
+
+<h3 class="function"><a name="get_type-1">get_type/1</a></h3>
+<div class="spec">
+<p><tt>get_type(El::<a href="exml.html#type-element">exml:element()</a>) -&gt; binary() | undefined</tt><br></p>
+</div>
+
+<h3 class="function"><a name="get_xmlns-1">get_xmlns/1</a></h3>
+<div class="spec">
+<p><tt>get_xmlns(El::<a href="exml.html#type-element">exml:element()</a>) -&gt; binary() | undefined</tt><br></p>
+</div>
+
+<h3 class="function"><a name="iq-3">iq/3</a></h3>
+<div class="spec">
+<p><tt>iq(Id::binary(), Type::binary(), Children::[<a href="exml.html#type-element">exml:element()</a> | <a href="exml.html#type-cdata">exml:cdata()</a>]) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="iq_get-3">iq_get/3</a></h3>
+<div class="spec">
+<p><tt>iq_get(Id::binary(), Xmlns::binary(), Children::[<a href="exml.html#type-element">exml:element()</a>]) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="iq_set-3">iq_set/3</a></h3>
+<div class="spec">
+<p><tt>iq_set(Id::binary(), Xmlns::binary(), Children::[<a href="exml.html#type-element">exml:element()</a>]) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="message-4">message/4</a></h3>
+<div class="spec">
+<p><tt>message(Id::binary(), Type::binary(), To::<a href="xcl.html#type-jid">xcl:jid()</a>, PropList::list()) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="muc_disco_info-2">muc_disco_info/2</a></h3>
+<div class="spec">
+<p><tt>muc_disco_info(Id::binary(), Room::<a href="xcl.html#type-jid">xcl:jid()</a>) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="muc_disco_items-2">muc_disco_items/2</a></h3>
+<div class="spec">
+<p><tt>muc_disco_items(Id::binary(), Room::<a href="xcl.html#type-jid">xcl:jid()</a>) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="muc_join-2">muc_join/2</a></h3>
+<div class="spec">
+<p><tt>muc_join(Room::<a href="xcl.html#type-jid">xcl:jid()</a>, PropList::list()) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="muc_leave-2">muc_leave/2</a></h3>
+<div class="spec">
+<p><tt>muc_leave(Room::<a href="xcl.html#type-jid">xcl:jid()</a>, Priority::binary()) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="presence-1">presence/1</a></h3>
+<div class="spec">
+<p><tt>presence(PropList::list()) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="presence_roster-3">presence_roster/3</a></h3>
+<div class="spec">
+<p><tt>presence_roster(To::<a href="xcl.html#type-jid">xcl:jid()</a>, Type::binary(), Priority::binary()) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="privacy_req_list_names-1">privacy_req_list_names/1</a></h3>
+<div class="spec">
+<p><tt>privacy_req_list_names(Id::binary()) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="privacy_req_lists-2">privacy_req_lists/2</a></h3>
+<div class="spec">
+<p><tt>privacy_req_lists(Id::binary(), Lists::[binary()]) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="privacy_set_active-2">privacy_set_active/2</a></h3>
+<div class="spec">
+<p><tt>privacy_set_active(Id::binary(), Name::binary()) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="privacy_set_default-2">privacy_set_default/2</a></h3>
+<div class="spec">
+<p><tt>privacy_set_default(Id::binary(), Name::binary()) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="privacy_set_list-3">privacy_set_list/3</a></h3>
+<div class="spec">
+<p><tt>privacy_set_list(Id::binary(), Name::binary(), Items::list()) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="privacy_unset_active-1">privacy_unset_active/1</a></h3>
+<div class="spec">
+<p><tt>privacy_unset_active(Id::binary()) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="privacy_unset_default-1">privacy_unset_default/1</a></h3>
+<div class="spec">
+<p><tt>privacy_unset_default(Id::binary()) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="roster_remove_item-2">roster_remove_item/2</a></h3>
+<div class="spec">
+<p><tt>roster_remove_item(Id::binary(), Jid::<a href="xcl.html#type-jid">xcl:jid()</a>) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="roster_remove_items-2">roster_remove_items/2</a></h3>
+<div class="spec">
+<p><tt>roster_remove_items(Id::binary(), Jids::[<a href="xcl.html#type-jid">xcl:jid()</a>]) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="roster_req_list-1">roster_req_list/1</a></h3>
+<div class="spec">
+<p><tt>roster_req_list(Id::binary()) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="roster_set_item-2">roster_set_item/2</a></h3>
+<div class="spec">
+<p><tt>roster_set_item(Id::binary(), Item::{<a href="xcl.html#type-jid">xcl:jid()</a>, binary(), [binary()]}) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="roster_set_items-2">roster_set_items/2</a></h3>
+<div class="spec">
+<p><tt>roster_set_items(Id::binary(), Items::[{<a href="xcl.html#type-jid">xcl:jid()</a>, binary(), [binary()]}]) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="session-0">session/0</a></h3>
+<div class="spec">
+<p><tt>session() -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="session-1">session/1</a></h3>
+<div class="spec">
+<p><tt>session(Params::list()) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="set_recipient-2">set_recipient/2</a></h3>
+<div class="spec">
+<p><tt>set_recipient(El::<a href="exml.html#type-element">exml:element()</a>, Recipient::binary()) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="set_sender-2">set_sender/2</a></h3>
+<div class="spec">
+<p><tt>set_sender(El::<a href="exml.html#type-element">exml:element()</a>, Sender::binary()) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="starttls-0">starttls/0</a></h3>
+<div class="spec">
+<p><tt>starttls() -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="stream_end-0">stream_end/0</a></h3>
+<div class="spec">
+<p><tt>stream_end() -&gt; <a href="exml_stream.html#type-element">exml_stream:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="stream_start-2">stream_start/2</a></h3>
+<div class="spec">
+<p><tt>stream_start(Server::binary(), X2::client | server) -&gt; <a href="exml_stream.html#type-element">exml_stream:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="verify_auth-1">verify_auth/1</a></h3>
+<div class="spec">
+<p><tt>verify_auth(Xmlel::<a href="exml.html#type-element">exml:element()</a>) -&gt; boolean()</tt><br></p>
+</div>
+
+<h3 class="function"><a name="verify_bind-1">verify_bind/1</a></h3>
+<div class="spec">
+<p><tt>verify_bind(Xmlel::<a href="exml.html#type-element">exml:element()</a>) -&gt; {true, <a href="xcl.html#type-jid">xcl:jid()</a>} | false</tt><br></p>
+</div>
+
+<h3 class="function"><a name="verify_compress-1">verify_compress/1</a></h3>
+<div class="spec">
+<p><tt>verify_compress(Xmlel::<a href="exml.html#type-element">exml:element()</a>) -&gt; boolean()</tt><br></p>
+</div>
+
+<h3 class="function"><a name="verify_session-1">verify_session/1</a></h3>
+<div class="spec">
+<p><tt>verify_session(Xmlel::<a href="exml.html#type-element">exml:element()</a>) -&gt; {true, list()} | false</tt><br></p>
+</div>
+
+<h3 class="function"><a name="verify_starttls-1">verify_starttls/1</a></h3>
+<div class="spec">
+<p><tt>verify_starttls(Xmlel::<a href="exml.html#type-element">exml:element()</a>) -&gt; boolean()</tt><br></p>
+</div>
+
+<h3 class="function"><a name="ws_close-0">ws_close/0</a></h3>
+<div class="spec">
+<p><tt>ws_close() -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+
+<h3 class="function"><a name="ws_open-1">ws_open/1</a></h3>
+<div class="spec">
+<p><tt>ws_open(Server::binary()) -&gt; <a href="exml.html#type-element">exml:element()</a></tt><br></p>
+</div>
+<hr>
+
+<div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<p><i>Generated by EDoc, Mar 17 2017, 21:04:09.</i></p>
+</body>
+</html>

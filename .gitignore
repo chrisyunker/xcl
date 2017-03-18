@@ -4,6 +4,6 @@ rebar
 deps
 ebin
 log
-*.o
-*.beam
-*.plt
+erl_crash.dump
+doc/README.md
+_build

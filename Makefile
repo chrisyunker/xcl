@@ -1,39 +1,38 @@
-.PHONY: deps test clean
-PLT_LIBS = erts kernel stdlib sasl crypto public_key compiler runtime_tools ssl
-PLT = .xcl.plt
-DIALYZER_APPS_PATHS = ebin deps/*/ebin
+REBAR3 = ./bin/rebar3
+ELVIS = ./bin/elvis
 
-all: deps compile
-
-deps: rebar
-	./rebar get-deps
-
-compile: deps
-	./rebar compile
-
-app:
-	./rebar compile skip_deps=true -f
-
-test: compile
-	./rebar eunit skip_deps=true
+all: compile
 
 clean: rebar
-	./rebar clean
+	@echo "Running rebar clean..."
+	$(REBAR3) clean
 
-rebar:
-	wget https://github.com/rebar/rebar/releases/download/2.5.1/rebar && chmod u+x rebar
+compile: deps
+	@echo "Running rebar compile..."
+	$(REBAR3) compile
 
-dialyzer: compile $(PLT)
-	@dialyzer -Wno_return --fullpath --plt $(PLT) $(DIALYZER_APPS_PATHS) | grep -v -f dialyzer.ignore-warnings
+test: compile
+	@echo "Running rebar test..."
+	$(REBAR3) eunit skip_deps=true
 
-check_plt: all
-	@dialyzer --check_plt --plt $(PLT) --apps $(PLT_LIBS)
+elvis:
+	@echo "Running elvis rock..."
+	$(ELVIS) rock
 
-clean_plt:
-	rm $(PLT)
+dialyzer:
+	@echo "Running rebar dialyzer..."
+	$(REBAR3) dialyzer
 
-$(PLT):
-	@dialyzer --build_plt --output_plt $(PLT) --apps $(PLT_LIBS)
+profile:
+	@echo "Running rebar profile..."
+	@$(REBAR3) as test compile
+
+edoc:
+	@echo "Running rebar edoc..."
+	@$(REBAR3) as edoc edoc
 
 xref:
-	@./priv/xref_check.es | grep -v "unresolved call" || true
+	@echo "Running rebar xref..."
+	@$(REBAR3) xref
+
+.PHONY: clean compile test elvis dialyzer profile edoc xref

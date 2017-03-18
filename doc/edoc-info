@@ -1,0 +1,4 @@
+%% encoding: UTF-8
+{application,xcl}.
+{modules,[xcl,xcl_auth,xcl_jid,xcl_log,xcl_session,xcl_socket,xcl_stanza,
+          xcl_util,xcl_ws,xcl_xml]}.
