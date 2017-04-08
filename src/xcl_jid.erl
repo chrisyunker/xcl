@@ -18,10 +18,9 @@
          from_binary/1,
          bare_to_binary/1]).
 
-%%%===================================================================
-%%% API
-%%%===================================================================
-
+%%====================================================================
+%% API functions
+%%====================================================================
 -spec make(binary() | string(), binary() | string()) -> xcl:jid().
 make(Node, Domain) ->
     #jid{node = xcl_util:to_binary(Node),
@@ -62,13 +61,12 @@ from_binary(Jid) ->
     Node = binary:part(Jid, {0, AtPos}),
     case binary:match(Jid, <<"/">>, []) of
         nomatch ->
-            Domain = binary:part(Jid, {AtPos + 1, size(Jid) - AtPos - 1}),
+            Domain = part_after(Jid, AtPos),
             #jid{node = Node,
                  domain = Domain};
         {SlashPos, _} ->
             Domain = binary:part(Jid, {AtPos + 1, SlashPos - AtPos - 1}),
-            Resource = binary:part(Jid,
-                                   {SlashPos + 1, size(Jid) - SlashPos - 1}),
+            Resource = part_after(Jid, SlashPos),
             #jid{node = Node,
                  domain = Domain,
                  resource = Resource}
@@ -77,4 +75,8 @@ from_binary(Jid) ->
 -spec bare_to_binary(xcl:jid()) -> binary().
 bare_to_binary(Jid) ->
     to_binary(Jid#jid{resource = <<>>}).
+
+-spec part_after(binary(), integer()) -> integer().
+part_after(Bin, Pos) ->
+    binary:part(Bin, {Pos + 1, size(Bin) - Pos - 1}).
 

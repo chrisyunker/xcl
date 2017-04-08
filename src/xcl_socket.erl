@@ -11,9 +11,10 @@
 -include("xcl.hrl").
 -include("xcl_config.hrl").
 
+-behaviour(xcl_transport).
 -behaviour(gen_server).
 
-%% transport implementation
+%% xcl_transport callbacks
 -export([check_args/1,
          connect/1,
          disconnect/1,
@@ -34,7 +35,7 @@
 
 -import(xcl_util, [to_list/1, to_integer/1]).
 
--record(state, {module :: atom(),
+-record(state, {module :: module(),
                 client :: pid(),
                 socket :: term(),
                 parser :: tuple(),
@@ -42,10 +43,9 @@
 
 -type state() :: #state{}.
 
-%%%===================================================================
-%%% API
-%%%===================================================================
-
+%%====================================================================
+%% xcl_transport callbacks
+%%====================================================================
 -spec check_args(list()) -> ok.
 check_args(Args) ->
     ReqArgs = [username,
@@ -75,7 +75,8 @@ disconnect(#session{pid = Pid}) ->
             not_connected
     end.
 
--spec start_stream(xcl:session()) -> ok | {error, term()}.
+-spec start_stream(xcl:session()) ->
+    ok | {error, term()}.
 start_stream(#session{jid = Jid} = Session) ->
     send_stanza(Session, xcl_stanza:stream_start(Jid#jid.domain, client)).
 
@@ -83,7 +84,8 @@ start_stream(#session{jid = Jid} = Session) ->
 end_stream(Session) ->
     send_stanza(Session, xcl_stanza:stream_end()).
 
--spec send_stanza(xcl:session(), exml_stream:element()) -> ok | {error, term()}.
+-spec send_stanza(xcl:session(), exml_stream:element()) ->
+    ok | {error, term()}.
 send_stanza(#session{socket = Socket, tls = true}, El) ->
     ssl:send(Socket, exml:to_iolist(El));
 send_stanza(#session{socket = Socket}, El) ->
@@ -102,10 +104,9 @@ is_connected(#session{pid = Pid}) ->
     erlang:is_process_alive(Pid).
 
 
-%%%===================================================================
-%%% gen_server callbacks
-%%%===================================================================
-
+%%====================================================================
+%% gen_server callbacks
+%%====================================================================
 init([Client]) ->
     {ok, #state{client = Client}}.
 
@@ -113,7 +114,7 @@ handle_call({connect, Args}, _From, State) ->
     Host = to_list(proplists:get_value(host, Args)),
     Port = to_integer(proplists:get_value(port, Args)),
     LocalIps = proplists:get_value(local_ip_list, Args, []),
-    {Module, Opts, Tls} = case proplists:get_value(tls, Args) of
+    {Mod, Opts, Tls} = case proplists:get_value(tls, Args) of
         tls ->
             ssl:start(),
             {ssl, ?XCL_TLS_OPTS ++ ?XCL_TCP_OPTS, true};
@@ -122,7 +123,7 @@ handle_call({connect, Args}, _From, State) ->
     end,
     xcl_log:debug("[xcl_socket] Connect socket ~s:~p with options: ~p",
          [Host, Port, Opts]),
-    case connect_sock(Module, Host, Port, Opts,
+    case connect_sock(Mod, Host, Port, Opts,
                       ?XCL_SOCK_CONN_TIMEOUT, LocalIps) of
         {ok, Socket} ->
             {ok, Parser} = exml_stream:new_parser(),
@@ -130,7 +131,7 @@ handle_call({connect, Args}, _From, State) ->
                                pid = self(),
                                socket = Socket,
                                tls = Tls},
-            {reply, {ok, Session}, State#state{module = Module,
+            {reply, {ok, Session}, State#state{module = Mod,
                                                socket = Socket,
                                                parser = Parser}};
         {error, Error} ->
@@ -186,20 +187,19 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 
-%%%===================================================================
-%%% Private functions
-%%%===================================================================
-
--spec connect_sock(atom(), string(), integer(), list(), integer(), list()) ->
+%%====================================================================
+%% Internal functions
+%%====================================================================
+-spec connect_sock(module(), string(), integer(), list(), integer(), list()) ->
     {ok, term()} | {error, term()}.
-connect_sock(Module, Host, Port, Opts, Timeout, []) ->
-    Module:connect(Host, Port, Opts, Timeout);
-connect_sock(Module, Host, Port, Opts, Timeout, [Ip | Tail]) ->
+connect_sock(Mod, Host, Port, Opts, Timeout, []) ->
+    Mod:connect(Host, Port, Opts, Timeout);
+connect_sock(Mod, Host, Port, Opts, Timeout, [Ip | Tail]) ->
     Opts2 = [{ip, Ip} | Opts],
-    case Module:connect(Host, Port, Opts2, Timeout) of
+    case Mod:connect(Host, Port, Opts2, Timeout) of
         {error, eaddrinuse} when Tail /= [] ->
             %% Try again with another local IP if there are more
-            connect_sock(Module, Host, Port, Opts, Timeout, Tail);
+            connect_sock(Mod, Host, Port, Opts, Timeout, Tail);
         Result ->
             Result
     end.
@@ -207,9 +207,9 @@ connect_sock(Module, Host, Port, Opts, Timeout, [Ip | Tail]) ->
 -spec receive_data(binary(), state()) ->
     {noreply, state()} | {stop, normal, state()}.
 receive_data(Data, #state{parser = Parser,
-                          module = Module,
+                          module = Mod,
                           socket = Socket} = State) ->
-    setopts(Module, Socket, [{active, once}]),
+    setopts(Mod, Socket, [{active, once}]),
     {ok, Parser1, Stanzas} = exml_stream:parse(Parser, Data),
     process_stanzas(Stanzas, State#state{parser = Parser1}).
 
@@ -231,8 +231,8 @@ process_stanzas([Stanza | Tail], #state{client = Client} = State) ->
 -spec free_socket(state()) -> any().
 free_socket(#state{socket = undefined}) ->
     ok;
-free_socket(#state{socket = Socket, module = Module}) ->
-    Module:close(Socket).
+free_socket(#state{socket = Socket, module = Mod}) ->
+    Mod:close(Socket).
 
 -spec free_parser(state()) -> any().
 free_parser(#state{parser = undefined}) ->
@@ -241,10 +241,10 @@ free_parser(#state{parser = Parser}) ->
     exml_stream:free_parser(Parser).
 
 -spec socket_error(atom(), atom(), state()) -> {noreply, state()}.
-socket_error(Event, Reason, #state{module = Module, socket = Socket} = State) ->
+socket_error(Event, Reason, #state{module = Mod, socket = Socket} = State) ->
     xcl_log:warning("[xcl_socket] Received socket error: ~p, reason: ~p",
          [Event, Reason]),
-    setopts(Module, Socket, [{active, once}]),
+    setopts(Mod, Socket, [{active, once}]),
     {noreply, State}.
 
 -spec stream_error(exml:element(), state()) -> {stop, normal, state()}.
@@ -260,9 +260,9 @@ socket_closed(Event, #state{client = Client} = State) ->
     Client ! {Event, self()},
     {stop, normal, State}.
 
--spec setopts(atom(), term(), list()) -> ok | {error, atom()}.
+-spec setopts(module(), term(), list()) -> ok | {error, atom()}.
 setopts(gen_tcp, Socket, Opts) ->
     inet:setopts(Socket, Opts);
-setopts(Module, Socket, Opts) ->
-    Module:setopts(Socket, Opts).
+setopts(Mod, Socket, Opts) ->
+    Mod:setopts(Socket, Opts).
 

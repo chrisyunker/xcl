@@ -11,9 +11,10 @@
 -include("xcl.hrl").
 -include("xcl_config.hrl").
 
+-behaviour(xcl_transport).
 -behaviour(websocket_client_handler).
 
-%% transport implementation
+%% xcl_transport callbacks
 -export([check_args/1,
          connect/1,
          disconnect/1,
@@ -39,9 +40,9 @@
 
 -type state() :: #state {}.
 
-%%%===================================================================
-%%% API
-%%%===================================================================
+%%====================================================================
+%% xcl_transport callbacks
+%%====================================================================
 -spec check_args(list()) -> ok.
 check_args(Args) ->
     ReqArgs = [username,
@@ -119,9 +120,9 @@ reset_parser(#session{pid = Pid}) ->
 is_connected(#session{pid = Pid}) ->
     erlang:is_process_alive(Pid).
 
-%%%===================================================================
-%%% websocket_client_handler callbacks
-%%%===================================================================
+%%====================================================================
+%% websocket_client_handler callbacks
+%%====================================================================
 -spec init(list(), websocket_req:req()) -> {ok, state()}.
 init([Pid, LegacyWS], _ConnState) ->
     Parser = create_parser(LegacyWS),
@@ -175,9 +176,9 @@ websocket_terminate(Reason, _Req, State) ->
     end,
     ok.
 
-%%%===================================================================
-%%% Private functions
-%%%===================================================================
+%%====================================================================
+%% Internal functions
+%%====================================================================
 -spec create_parser(boolean()) -> exml_stream:parser().
 create_parser(true) ->
     create_parser2([]);

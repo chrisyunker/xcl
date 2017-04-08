@@ -3,15 +3,15 @@ ELVIS = ./bin/elvis
 
 all: compile
 
-clean: rebar
+clean:
 	@echo "Running rebar clean..."
 	$(REBAR3) clean
 
-compile: deps
+compile:
 	@echo "Running rebar compile..."
 	$(REBAR3) compile
 
-test: compile
+test:
 	@echo "Running rebar test..."
 	$(REBAR3) eunit skip_deps=true
 

@@ -1,6 +1,6 @@
 %% Records
 
--record(session, {transport :: atom(),
+-record(session, {transport :: module(),
                   pid :: pid(),
                   socket :: term(),
                   jid :: xcl:jid(),

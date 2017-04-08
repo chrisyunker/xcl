@@ -1,7 +1,5 @@
 .eunit
 .rebar
-rebar
-deps
 ebin
 log
 erl_crash.dump

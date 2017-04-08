@@ -79,12 +79,11 @@
 -import(xcl_util, [to_binary/1,
                    id/0]).
 
-%%%===================================================================
-%%% API
-%%%===================================================================
+%%====================================================================
+%% API functions
+%%====================================================================
 
-%%% Core functions
-%%%-------------------------------------------------------------------
+%% Core stanzas
 
 -spec el_xmlns(binary() | string()) -> exml:element().
 el_xmlns(Xmlns) ->
@@ -141,8 +140,7 @@ get_error(El) ->
     end.
 
 
-%%% IQ stanzas
-%%%-------------------------------------------------------------------
+%% IQ stanzas
 
 -spec iq(binary(), binary(), [exml:element() | exml:cdata()]) -> exml:element().
 iq(Id, Type, Children) ->
@@ -170,8 +168,8 @@ get_iq_result(#xmlel{name = <<"iq">>, children = Result} = El) ->
         _            -> undefined
     end.
 
-%%% Presence stanzas
-%%%-------------------------------------------------------------------
+
+%% Presence stanzas
 
 -spec presence(list()) -> exml:element().
 presence(PropList) ->
@@ -180,12 +178,16 @@ presence(PropList) ->
                               <<"show">>], PropList),
     xcl_xml:el(<<"presence">>, [], Children).
 
+-spec presence([exml:attr()], binary()) -> exml:element().
+presence(Attrs, Priority) ->
+    xcl_xml:el(<<"presence">>, Attrs,
+               [xcl_xml:el_simple(<<"priority">>, Priority)]).
+
 -spec presence_roster(xcl:jid(), binary(), binary()) -> exml:element().
 presence_roster(To, Type, Priority) ->
     Attrs = [{<<"to">>, xcl_jid:bare_to_binary(To)},
              {<<"type">>, to_binary(Type)}],
-    xcl_xml:el(<<"presence">>, Attrs,
-               [xcl_xml:el_simple(<<"priority">>, Priority)]).
+    presence(Attrs, Priority).
 
 -spec get_presence_type(exml:element()) -> binary() | undefined.
 get_presence_type(#xmlel{name = <<"presence">>} = El) ->
@@ -205,8 +207,8 @@ get_presence_show(#xmlel{name = <<"presence">>} = El) ->
         ShowEl -> exml_query:cdata(ShowEl)
     end.
 
-%%% Message stanzas
-%%%-------------------------------------------------------------------
+
+%% Message stanzas
 
 -spec message(binary(), binary(), xcl:jid(), list()) -> exml:element().
 message(Id, Type, To, PropList) ->
@@ -240,12 +242,11 @@ get_message_subject(El) ->
     end.
 
 
-%%% Roster stanzas
-%%%-------------------------------------------------------------------
-%%%
-%%% Set item tuple:  {xcl:jid(), Nick, [Group]}
-%%% Remove item:     xcl:jid()
-%%% Get item tuple:  {xcl:jid(), Nick, [Group], Subscription, Ask}
+%% Roster stanzas
+%%
+%% Set item tuple:  {xcl:jid(), Nick, [Group]}
+%% Remove item:     xcl:jid()
+%% Get item tuple:  {xcl:jid(), Nick, [Group], Subscription, Ask}
 
 -spec roster_req_list(binary()) -> exml:element().
 roster_req_list(Id) ->
@@ -303,11 +304,10 @@ get_roster_item(#xmlel{name = <<"item">>} = El, Acc) ->
     [{xcl_jid:from_binary(Jid), Name, Groups, Sub, Ask} | Acc].
 
 
-%%% Privacy stanzas
-%%%-------------------------------------------------------------------
-%%%
-%%% Set item tuple:  {Action, Type, Value, Order}
-%%% Get item tuple:  {Action, Type, Value, Order}
+%% Privacy stanzas
+%%
+%% Set item tuple:  {Action, Type, Value, Order}
+%% Get item tuple:  {Action, Type, Value, Order}
 
 -spec privacy_req_list_names(binary()) -> exml:element().
 privacy_req_list_names(Id) ->
@@ -401,8 +401,7 @@ privacy_el_to_tuple(#xmlel{name = <<"item">>} = El) ->
     {Action, Type, Value, Order}.
 
 
-%%% MUC stanzas
-%%%-------------------------------------------------------------------
+%% MUC stanzas
 
 -spec muc_join(xcl:jid(), list()) -> exml:element().
 muc_join(Room, PropList) ->
@@ -421,8 +420,7 @@ muc_join(Room, PropList) ->
 muc_leave(Room, Priority) ->
     Attrs = [{<<"to">>, xcl_jid:to_binary(Room)},
              {<<"type">>, <<"unavailable">>}],
-    xcl_xml:el(<<"presence">>, Attrs,
-               [xcl_xml:el_simple(<<"priority">>, Priority)]).
+    presence(Attrs, Priority).
 
 -spec muc_disco_info(binary(), xcl:jid()) -> exml:element().
 muc_disco_info(Id, Room) ->
@@ -488,8 +486,7 @@ get_status(_, Acc) ->
     Acc.
 
 
-%%% Stream stanzas
-%%%-------------------------------------------------------------------
+%% Stream stanzas
 
 -spec stream_start(binary(), client | server) -> exml_stream:element().
 stream_start(Server, client) ->
@@ -625,10 +622,9 @@ verify_session(#xmlel{name = <<"iq">>} = El) ->
 verify_session(_) ->
     false.
 
-%%%===================================================================
-%%% Private functions
-%%%===================================================================
-
+%%====================================================================
+%% Internal functions
+%%====================================================================
 -spec add_el_simple([binary()], list()) -> [exml:element()].
 add_el_simple(Keys, PropList) ->
     add_el_simple(Keys, PropList, []).
