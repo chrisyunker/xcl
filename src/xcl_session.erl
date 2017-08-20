@@ -19,8 +19,6 @@
          is_valid/1,
          get_jid/1]).
 
--import(xcl_util, [to_binary/1]).
-
 %%====================================================================
 %% API functions
 %%====================================================================
@@ -150,7 +148,7 @@ authenticate(#session{transport = Trans} = Session, Args) ->
 -spec bind(xcl:session(), list()) -> xcl:session().
 bind(#session{transport = Trans} = Session, Args) ->
     try
-        Resource = to_binary(proplists:get_value(resource, Args)),
+        Resource = proplists:get_value(resource, Args),
         Trans:send_stanza(Session, xcl_stanza:bind(Resource)),
         {ok, BindEl} = receive_stanza(Session, wait_for_bind),
         Jid = case xcl_stanza:verify_bind(BindEl) of

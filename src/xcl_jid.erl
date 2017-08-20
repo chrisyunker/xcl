@@ -76,7 +76,7 @@ from_binary(Jid) ->
 bare_to_binary(Jid) ->
     to_binary(Jid#jid{resource = <<>>}).
 
--spec part_after(binary(), integer()) -> integer().
+-spec part_after(binary(), non_neg_integer()) -> binary().
 part_after(Bin, Pos) ->
     binary:part(Bin, {Pos + 1, size(Bin) - Pos - 1}).
 

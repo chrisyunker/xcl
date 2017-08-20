@@ -12,8 +12,6 @@
 
 -export([authenticate/2]).
 
--import(xcl_util, [to_binary/1]).
-
 %%====================================================================
 %% API functions
 %%====================================================================
@@ -28,8 +26,8 @@ authenticate(Session, Args) ->
 
 -spec auth_plain(xcl:session(), list()) -> ok.
 auth_plain(#session{transport = Trans} = Session, Args) ->
-    Username = to_binary(proplists:get_value(username, Args)),
-    Password = to_binary(proplists:get_value(password, Args)),
+    Username = proplists:get_value(username, Args),
+    Password = proplists:get_value(password, Args),
     Stanza = xcl_stanza:auth_plain(Username, Password),
     ok = Trans:send_stanza(Session, Stanza),
     {ok, AuthEl} = xcl_session:receive_stanza(Session, auth_reply),

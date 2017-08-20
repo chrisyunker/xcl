@@ -14,7 +14,6 @@
          el/1, el/3,
          el_simple/2,
          cdata/1,
-         xml_to_binary/1,
          xml_to_list/1,
          xml_to_iolist/1]).
 
@@ -36,23 +35,21 @@
          add_children/2,
          get_path/2, get_path/3]).
 
--import(xcl_util, [to_binary/1]).
-
 %%====================================================================
 %% API functions
 %%====================================================================
--spec attr(binary() | string(), binary() | string()) -> exml:attr().
+-spec attr(binary(), binary()) -> exml:attr().
 attr(Name, Value) ->
-    {to_binary(Name), exml:escape_attr(to_binary(Value))}.
+    {Name, exml:escape_attr(Value)}.
 
--spec el(binary() | string()) -> exml:element().
+-spec el(binary()) -> exml:element().
 el(Name) ->
-    #xmlel{name = to_binary(Name)}.
+    #xmlel{name = Name}.
 
--spec el(binary() | string(), [exml:attr()],
+-spec el(binary(), [exml:attr()],
          [exml:element() | exml:cdata()]) -> exml:element().
 el(Name, Attrs, Children) ->
-    #xmlel{name = to_binary(Name),
+    #xmlel{name = Name,
            attrs = Attrs,
            children = Children}.
 
@@ -63,10 +60,6 @@ el_simple(Name, Content) ->
 -spec cdata(iodata()) -> exml:cdata().
 cdata(Content) ->
     exml:escape_cdata(Content).
-
--spec xml_to_binary(exml:item() | [exml:item()]) -> binary().
-xml_to_binary(Doc) ->
-    exml:to_binary(Doc).
 
 -spec xml_to_list(exml:item()) -> string().
 xml_to_list(Doc) ->

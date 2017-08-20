@@ -76,8 +76,7 @@
          verify_bind/1,
          verify_session/1]).
 
--import(xcl_util, [to_binary/1,
-                   id/0]).
+-import(xcl_util, [id/0]).
 
 %%====================================================================
 %% API functions
@@ -145,20 +144,20 @@ get_error(El) ->
 -spec iq(binary(), binary(), [exml:element() | exml:cdata()]) -> exml:element().
 iq(Id, Type, Children) ->
     #xmlel{name = <<"iq">>,
-           attrs = [{<<"id">>, to_binary(Id)},
-                    {<<"type">>, to_binary(Type)}],
+           attrs = [{<<"id">>, Id},
+                    {<<"type">>, Type}],
            children = Children}.
 
 -spec iq_get(binary(), binary(), [exml:element()]) -> exml:element().
 iq_get(Id, Xmlns, Children) ->
     iq(Id, <<"get">>, [#xmlel{name = <<"query">>,
-                              attrs = [{<<"xmlns">>, to_binary(Xmlns)}],
+                              attrs = [{<<"xmlns">>, Xmlns}],
                               children = Children}]).
 
 -spec iq_set(binary(), binary(), [exml:element()]) -> exml:element().
 iq_set(Id, Xmlns, Children) ->
     iq(Id, <<"set">>, [#xmlel{name = <<"query">>,
-                              attrs = [{<<"xmlns">>, to_binary(Xmlns)}],
+                              attrs = [{<<"xmlns">>, Xmlns}],
                               children = Children}]).
 
 -spec get_iq_result(exml:element()) -> exml:element() | undefined.
@@ -186,7 +185,7 @@ presence(Attrs, Priority) ->
 -spec presence_roster(xcl:jid(), binary(), binary()) -> exml:element().
 presence_roster(To, Type, Priority) ->
     Attrs = [{<<"to">>, xcl_jid:bare_to_binary(To)},
-             {<<"type">>, to_binary(Type)}],
+             {<<"type">>, Type}],
     presence(Attrs, Priority).
 
 -spec get_presence_type(exml:element()) -> binary() | undefined.
@@ -214,8 +213,8 @@ get_presence_show(#xmlel{name = <<"presence">>} = El) ->
 message(Id, Type, To, PropList) ->
     Children = add_el_simple([<<"body">>,
                               <<"subject">>], PropList),
-    Attrs = [{<<"id">>, to_binary(Id)},
-             {<<"type">>, to_binary(Type)},
+    Attrs = [{<<"id">>, Id},
+             {<<"type">>, Type},
              {<<"to">>, xcl_jid:to_binary(To)}],
     xcl_xml:el(<<"message">>, Attrs, Children).
 
@@ -520,9 +519,9 @@ ws_close() ->
 starttls() ->
     xcl_xml:el(<<"starttls">>, [{<<"xmlns">>, ?NS_TLS}], []).
 
--spec compress(binary() | atom()) -> exml:element().
+-spec compress(atom()) -> exml:element().
 compress(Method) ->
-    Method1 = to_binary(Method),
+    Method1 = atom_to_binary(Method, latin1),
     xcl_xml:el(<<"compress">>,
                [{<<"xmlns">>, ?NS_COMPRESS}],
                [xcl_xml:el_simple(<<"method">>, Method1)]).
@@ -553,7 +552,7 @@ session() ->
 
 -spec session(list()) -> exml:element().
 session(Params) ->
-    ParamEls = [xcl_xml:el_simple(K, to_binary(V)) || {K, V} <- Params],
+    ParamEls = [xcl_xml:el_simple(K, V) || {K, V} <- Params],
     Session = xcl_xml:el(<<"session">>, [{<<"xmlns">>, ?NS_SESSION}], ParamEls),
     iq(id(), <<"set">>, [Session]).
 
