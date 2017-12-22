@@ -1,12 +1,13 @@
-##xcl
+XCL
+---
 
 [![Build Status](https://api.travis-ci.org/chrisyunker/xcl.png)](https://travis-ci.org/chrisyunker/xcl)
 
-**xcl** is a client XMPP library implemented in Erlang.
+**XCL** (XMPP Client Library) is a client XMPP library implemented in Erlang.
 
-###Building
+#### Building
 
-**xcl** is a rebar-compatible OTP application. It depends on the following libraries:
+**XCL** is a rebar-compatible OTP application. It depends on the following libraries:
 
 - [exml](https://github.com/esl/exml)
 - [wsecli](https://github.com/madtrick/wsecli)
@@ -14,7 +15,7 @@
 
 To build run *make* or use rebar tool.
 
-###Usage
+#### Usage
 
 Create a properly list with the following configured arguments:
 
